@@ -1,4 +1,4 @@
-package com.nhnacademy.account.entity;
+package com.nhnacademy.account.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package com.nhnacademy.account.entity;
+package com.nhnacademy.account.domain;
 
 public enum AccountStatus {
     ACTIVE,
