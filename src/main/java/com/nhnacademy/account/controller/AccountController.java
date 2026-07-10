@@ -19,7 +19,7 @@ public class AccountController {
     @PostMapping
     public ApiResponse<?> createAccount(@Valid @RequestBody CreateAccountRequest request) {
         if (request == null) {
-            return ApiResponse.error(ErrorCode.USER_NOT_FOUND);
+            return ApiResponse.error(ErrorCode.ACCOUNT_NOT_FOUND);
         }
 
         Account account = new Account(request.name(), request.email(), request.password());
