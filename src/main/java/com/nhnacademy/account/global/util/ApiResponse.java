@@ -15,7 +15,7 @@ public record ApiResponse<T>(
         return new ApiResponse<>(true, data, null, LocalDateTime.now());
     }
 
-    public static ApiResponse<Void> success(Void _ignore) {
+    public static ApiResponse<Void> ok() {
         return new ApiResponse<>(true, null, null, LocalDateTime.now());
     }
 
