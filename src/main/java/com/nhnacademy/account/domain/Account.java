@@ -4,13 +4,11 @@ import com.nhnacademy.account.exception.InvalidAccountStateException;
 import com.nhnacademy.account.exception.InvalidInputException;
 import com.nhnacademy.account.global.error.ErrorCode;
 import jakarta.persistence.*;
-import jakarta.validation.ValidationException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.UUID;
 
 @Entity
