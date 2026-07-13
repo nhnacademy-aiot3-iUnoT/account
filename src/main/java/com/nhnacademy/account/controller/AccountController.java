@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.function.EntityResponse;
 
 @RestController("/api/accounts")
 @RequiredArgsConstructor
@@ -17,14 +18,16 @@ public class AccountController {
     private final AccountService accountService;
 
     @PostMapping
-    public ApiResponse<?> createAccount(@Valid @RequestBody CreateAccountRequest request) {
+    public EntityResponse<?> createAccount(@Valid @RequestBody CreateAccountRequest request) {
         if (request == null) {
-            return ApiResponse.error(ErrorCode.ACCOUNT_NOT_FOUND);
+            return EntityResponse.fromObject(ApiResponse.error(ErrorCode.ACCOUNT_NOT_FOUND)).build();
         }
 
         Account account = new Account(request.name(), request.email(), request.password());
 
-        return ApiResponse.success(account);
+        return EntityResponse.fromObject(ApiResponse.success(account)).build();
     }
+
+
 
 }

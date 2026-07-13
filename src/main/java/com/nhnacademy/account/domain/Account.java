@@ -1,11 +1,15 @@
 package com.nhnacademy.account.domain;
 
+import com.nhnacademy.account.exception.InvalidAccountStateException;
+import com.nhnacademy.account.exception.InvalidInputException;
+import com.nhnacademy.account.global.error.ErrorCode;
 import jakarta.persistence.*;
+import jakarta.validation.ValidationException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,9 +35,6 @@ public class Account {
     )
     private UUID uuid;
 
-    /**
-     * 탈퇴 시 개인정보 제거를 위해 nullable 허용
-     */
     @Column(
             name = "email",
             unique = true,
@@ -41,18 +42,12 @@ public class Account {
     )
     private String email;
 
-    /**
-     * 탈퇴 시 제거
-     */
     @Column(
             name = "password_hash",
             length = 255
     )
     private String hashedPassword;
 
-    /**
-     * 탈퇴 시 제거
-     */
     @Column(
             name = "name",
             length = 100
@@ -72,16 +67,16 @@ public class Account {
             nullable = false,
             updatable = false
     )
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @Column(
             name = "updated_at",
             nullable = false
     )
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
 
     @Column(name = "withdrawn_at")
-    private Instant withdrawnAt;
+    private LocalDateTime withdrawnAt;
 
 
     /**
@@ -89,8 +84,8 @@ public class Account {
      */
     public Account(
             String name,
-            String hashedPassword,
-            String email
+            String email,
+            String hashedPassword
     ) {
         this.uuid = UUID.randomUUID();
         this.name = requireText(name, "이름");
@@ -138,8 +133,8 @@ public class Account {
      */
     public void lock() {
         if (this.accountStatus != AccountStatus.ACTIVE) {
-            throw new IllegalStateException(
-                    "활성 상태의 계정만 잠글 수 있습니다."
+            throw new InvalidAccountStateException(
+                    ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
 
@@ -152,8 +147,8 @@ public class Account {
      */
     public void unlock() {
         if (this.accountStatus != AccountStatus.LOCKED) {
-            throw new IllegalStateException(
-                    "잠긴 계정만 잠금 해제할 수 있습니다."
+            throw new InvalidAccountStateException(
+                    ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
 
@@ -166,8 +161,8 @@ public class Account {
      */
     public void deactivate() {
         if (this.accountStatus != AccountStatus.ACTIVE) {
-            throw new IllegalStateException(
-                    "활성 상태의 계정만 비활성화할 수 있습니다."
+            throw new InvalidAccountStateException(
+                    ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
 
@@ -180,8 +175,8 @@ public class Account {
      */
     public void activate() {
         if (this.accountStatus != AccountStatus.INACTIVE) {
-            throw new IllegalStateException(
-                    "비활성 상태의 계정만 활성화할 수 있습니다."
+            throw new InvalidAccountStateException(
+                    ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
 
@@ -196,12 +191,12 @@ public class Account {
      */
     public void withdraw() {
         if (this.accountStatus == AccountStatus.WITHDRAWN) {
-            throw new IllegalStateException(
-                    "이미 탈퇴한 계정입니다."
+            throw new InvalidAccountStateException(
+                    ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
 
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
 
         this.accountStatus = AccountStatus.WITHDRAWN;
         this.withdrawnAt = now;
@@ -231,8 +226,8 @@ public class Account {
 
     private void validateActive() {
         if (this.accountStatus != AccountStatus.ACTIVE) {
-            throw new IllegalStateException(
-                    "활성 상태의 계정만 수정할 수 있습니다."
+            throw new InvalidAccountStateException(
+                    ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
     }
@@ -242,13 +237,17 @@ public class Account {
             String value,
             String fieldName
     ) {
-        Objects.requireNonNull(
-                value,
-                fieldName + "은 null일 수 없습니다."
-        );
+
+        if (value == null) {
+            throw new InvalidInputException(
+                    ErrorCode.INVALID_INPUT,
+                    fieldName + "은 null일 수 없습니다."
+            );
+        }
 
         if (value.isBlank()) {
-            throw new IllegalArgumentException(
+            throw new InvalidInputException(
+                    ErrorCode.INVALID_INPUT,
                     fieldName + "은 비어 있을 수 없습니다."
             );
         }
@@ -259,7 +258,7 @@ public class Account {
 
     @PrePersist
     private void prePersist() {
-        Instant now = Instant.now();
+        LocalDateTime now = LocalDateTime.now();
 
         this.createdAt = now;
         this.updatedAt = now;
@@ -268,6 +267,6 @@ public class Account {
 
     @PreUpdate
     private void preUpdate() {
-        this.updatedAt = Instant.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }
