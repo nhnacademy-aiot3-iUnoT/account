@@ -33,8 +33,7 @@ public class AccountController {
             throw new InvalidInputException(ErrorCode.INVALID_INPUT);
         }
 
-        Account account = new Account(request.name(), request.email(), request.password());
-         accountService.createAccount(account);
+        Account account = accountService.createAccount(request);
 
         CreateAccountResponse createAccountResponse = new CreateAccountResponse("");
 
