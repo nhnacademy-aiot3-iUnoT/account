@@ -9,6 +9,7 @@ import com.nhnacademy.account.exception.EmailAlreadyExistsException;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,11 +22,12 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AccountService {
     private final AccountRepository accountRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public Account createAccount(CreateAccountRequest request) {
-        // TODO request.password -> hash
-        Account account = new Account(request.name(), request.email(), request.password());
+        String hashedPassword = passwordEncoder.encode(request.password());
+        Account account = new Account(request.name(), request.email(), hashedPassword);
 
         if (accountRepository.existsByEmail(account.getEmail())) {
             throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -56,8 +58,10 @@ public class AccountService {
 
         updatedAccount.changeEmail(request.email());
         updatedAccount.changeName(request.name());
-        // TODO request.password -> hash
-        updatedAccount.changePassword(request.password());
+
+
+        String hashedPassword = passwordEncoder.encode(request.password());
+        updatedAccount.changeHashedPassword(hashedPassword);
 
         return updatedAccount;
     }
