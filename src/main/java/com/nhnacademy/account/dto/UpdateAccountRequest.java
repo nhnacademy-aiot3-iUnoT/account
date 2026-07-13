@@ -6,5 +6,5 @@ public record UpdateAccountRequest(
         UUID uuid,
         String name,
         String email,
-        String hashedPassword
+        String password
 ) {}
