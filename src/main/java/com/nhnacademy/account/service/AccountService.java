@@ -9,6 +9,7 @@ import com.nhnacademy.account.exception.EmailAlreadyExistsException;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -87,6 +88,10 @@ public class AccountService {
 
         updatedAccount.changeEmail(request.email());
         updatedAccount.changeName(request.name());
+
+
+        String hashedPassword = passwordEncoder.encode(request.password());
+        updatedAccount.changeHashedPassword(hashedPassword);
 
 
         String hashedPassword = passwordEncoder.encode(request.password());
