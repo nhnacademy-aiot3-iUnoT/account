@@ -125,7 +125,7 @@ public class Account {
      *
      * 반드시 이미 해싱된 비밀번호를 전달해야 한다.
      */
-    public void changePassword(String hashedPassword) {
+    public void changeHashedPassword(String hashedPassword) {
         validateActive();
 
         this.hashedPassword =

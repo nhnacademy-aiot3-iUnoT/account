@@ -1,18 +1,14 @@
 package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
-import com.nhnacademy.account.domain.AccountRole;
-import com.nhnacademy.account.dto.ChangeAccountStatusRequest;
-import com.nhnacademy.account.dto.EmailAvailabilityRequest;
-import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
-import com.nhnacademy.account.dto.crud.CreateAccountRequest;
-import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
-import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
-import com.nhnacademy.account.exception.*;
+import com.nhnacademy.account.dto.CreateAccountRequest;
+import com.nhnacademy.account.dto.UpdateAccountRequest;
+import com.nhnacademy.account.dto.WithdrawAccountRequest;
+import com.nhnacademy.account.exception.AccountNotFoundException;
+import com.nhnacademy.account.exception.EmailAlreadyExistsException;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +21,12 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AccountService {
     private final AccountRepository accountRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public Account createAccount(CreateAccountRequest request) {
-        // TODO request.password -> hash
-        Account account = new Account(request.name(), request.email(), request.password());
+        String hashedPassword = passwordEncoder.encode(request.password());
+        Account account = new Account(request.name(), request.email(), hashedPassword);
 
         if (accountRepository.existsByEmail(account.getEmail())) {
             throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -87,6 +84,13 @@ public class AccountService {
         }
 
         Account updatedAccount = currentAccount.get();
+
+        updatedAccount.changeEmail(request.email());
+        updatedAccount.changeName(request.name());
+
+
+        String hashedPassword = passwordEncoder.encode(request.password());
+        updatedAccount.changeHashedPassword(hashedPassword);
 
         if (!updatedAccount.isActive()) {
             throw new InvalidAccountStateException(ErrorCode.INVALID_ACCOUNT_STATE);
