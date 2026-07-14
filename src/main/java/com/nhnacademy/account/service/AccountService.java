@@ -67,7 +67,6 @@ public class AccountService {
     }
 
 
-
     @Transactional
     public void deleteAccount(WithdrawAccountRequest request) {
         Account account = accountRepository.findByUuid(request.uuid())
