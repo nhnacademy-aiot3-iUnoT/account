@@ -8,12 +8,12 @@ import jakarta.validation.constraints.Size;
 public record CreateAccountRequest(
 
         @NotBlank
-        @Size(max = 100)
+        @Size(max = 16)
         String name,
 
         @NotBlank
         @Email
-        @Size(max = 255)
+        @Size(max = 32)
         String email,
 
         @NotBlank

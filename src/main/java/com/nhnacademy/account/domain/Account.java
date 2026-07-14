@@ -36,7 +36,7 @@ public class Account {
     @Column(
             name = "email",
             unique = true,
-            length = 255
+            length = 32
     )
     private String email;
 
@@ -48,7 +48,7 @@ public class Account {
 
     @Column(
             name = "name",
-            length = 100
+            length = 16
     )
     private String name;
 

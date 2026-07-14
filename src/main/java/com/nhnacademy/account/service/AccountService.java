@@ -26,7 +26,7 @@ public class AccountService {
     public Account createAccount(CreateAccountRequest request) {
         Account account = new Account(request.name(), request.email(), request.password());
 
-        if (accountRepository.findByEmail(account.getEmail()).isPresent()) {
+        if (accountRepository.existsByEmail(account.getEmail())) {
             throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
