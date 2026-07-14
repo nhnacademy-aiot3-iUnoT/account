@@ -24,6 +24,7 @@ public class AccountService {
 
     @Transactional
     public Account createAccount(CreateAccountRequest request) {
+        // TODO request.password -> hash
         Account account = new Account(request.name(), request.email(), request.password());
 
         if (accountRepository.existsByEmail(account.getEmail())) {
@@ -55,7 +56,8 @@ public class AccountService {
 
         updatedAccount.changeEmail(request.email());
         updatedAccount.changeName(request.name());
-        updatedAccount.changePassword(request.hashedPassword());
+        // TODO request.password -> hash
+        updatedAccount.changePassword(request.password());
 
         return updatedAccount;
     }

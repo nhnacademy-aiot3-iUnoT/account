@@ -19,6 +19,6 @@ public record UpdateAccountRequest(
         String email,
 
         @NotBlank
-        @Size(min = 6, max = 64)
-        String hashedPassword
+        @Size(max = 256)
+        String password
 ) {}

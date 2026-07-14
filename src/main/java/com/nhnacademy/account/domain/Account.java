@@ -42,7 +42,7 @@ public class Account {
 
     @Column(
             name = "password_hash",
-            length = 255
+            length = 256
     )
     private String hashedPassword;
 
