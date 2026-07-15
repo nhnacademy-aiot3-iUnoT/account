@@ -60,6 +60,14 @@ public class Account {
     )
     private AccountStatus accountStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(
+            name = "account_role",
+            nullable = false,
+            length = 20
+    )
+    private AccountRole accountRole;
+
     @Column(
             name = "created_at",
             nullable = false,
@@ -83,13 +91,23 @@ public class Account {
     public Account(
             String name,
             String email,
-            String hashedPassword
+            String hashedPassword,
+            AccountRole role
     ) {
         this.uuid = UUID.randomUUID();
         this.name = requireText(name, "이름");
         this.hashedPassword = requireText(hashedPassword, "비밀번호 해시");
         this.email = requireText(email, "이메일");
         this.accountStatus = AccountStatus.ACTIVE;
+        this.accountRole = role;
+    }
+
+    public Account(
+            String name,
+            String email,
+            String hashedPassword
+    ) {
+        this(name, email, hashedPassword, AccountRole.USER);
     }
 
 
@@ -101,17 +119,6 @@ public class Account {
 
         this.name = requireText(name, "이름");
     }
-
-
-    /**
-     * 이메일 변경
-     */
-    public void changeEmail(String email) {
-        validateActive();
-
-        this.email = requireText(email, "이메일");
-    }
-
 
     /**
      * 비밀번호 변경

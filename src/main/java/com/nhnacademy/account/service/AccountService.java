@@ -54,7 +54,6 @@ public class AccountService {
 
         Account updatedAccount = currentAccount.get();
 
-        updatedAccount.changeEmail(request.email());
         updatedAccount.changeName(request.name());
         // TODO request.password -> hash
         updatedAccount.changePassword(request.password());
