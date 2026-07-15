@@ -1,6 +1,7 @@
 package com.nhnacademy.account.controller;
 
 import com.nhnacademy.account.domain.Account;
+import com.nhnacademy.account.dto.AccountResponse;
 import com.nhnacademy.account.dto.CreateAccountRequest;
 import com.nhnacademy.account.dto.UpdateAccountRequest;
 import com.nhnacademy.account.dto.WithdrawAccountRequest;
@@ -20,31 +21,39 @@ public class AccountController {
     private final AccountService accountService;
 
     @GetMapping
-    public ResponseEntity<?> viewAllAccounts() {
-        List<Account> accounts = accountService.findAll();
+    public ResponseEntity<ApiResponse<List<AccountResponse>>> viewAllAccounts() {
+        List<AccountResponse> accounts = accountService.findAll().stream()
+                .map(AccountResponse::from)
+                .toList();
         return ResponseEntity.ok(ApiResponse.success(accounts));
     }
 
     @PostMapping
-    public ResponseEntity<?> createAccount(@Valid @RequestBody CreateAccountRequest request) {
+    public ResponseEntity<ApiResponse<AccountResponse>> createAccount(
+            @Valid @RequestBody CreateAccountRequest request
+    ) {
         Account account = accountService.createAccount(request);
-        return ResponseEntity.ok(ApiResponse.success(account));
+        return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentAccount() {
+    public ResponseEntity<ApiResponse<AccountResponse>> getCurrentAccount() {
         Account account = accountService.findAccount(/* TODO */ null);
-        return ResponseEntity.ok(ApiResponse.success(account));
+        return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
     @PostMapping("/me")
-    public ResponseEntity<?> updateAccount(@Valid @RequestBody UpdateAccountRequest request) {
+    public ResponseEntity<ApiResponse<AccountResponse>> updateAccount(
+            @Valid @RequestBody UpdateAccountRequest request
+    ) {
         Account account = accountService.updateAccount(request);
-        return ResponseEntity.ok(ApiResponse.success(account));
+        return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<?> deleteAccount(@Valid @RequestBody WithdrawAccountRequest request) {
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(
+            @Valid @RequestBody WithdrawAccountRequest request
+    ) {
         accountService.deleteAccount(request);
         return ResponseEntity.ok(ApiResponse.ok());
     }

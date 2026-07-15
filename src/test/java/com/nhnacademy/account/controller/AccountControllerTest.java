@@ -20,6 +20,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AccountController.class)
@@ -51,7 +52,14 @@ class AccountControllerTest {
                 .willReturn(accountList);
 
         mockMvc.perform(get("/api/accounts"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].uuid").value(accountList.getFirst().getUuid().toString()))
+                .andExpect(jsonPath("$.data[0].name").value("test"))
+                .andExpect(jsonPath("$.data[0].email").value("test@test.com"))
+                .andExpect(jsonPath("$.data[0].accountRole").value("USER"))
+                .andExpect(jsonPath("$.data[0].accountStatus").value("ACTIVE"))
+                .andExpect(jsonPath("$.data[0].id").doesNotExist())
+                .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist());
 
     }
 
@@ -67,7 +75,27 @@ class AccountControllerTest {
         mockMvc.perform(post("/api/accounts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.uuid").value(accountList.getFirst().getUuid().toString()))
+                .andExpect(jsonPath("$.data.id").doesNotExist())
+                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist());
+    }
+
+    @Test
+    void withdrawnAccountDoesNotExposeRemovedPersonalInformation() throws Exception {
+        Account withdrawnAccount = accountList.getFirst();
+        withdrawnAccount.withdraw();
+
+        given(accountService.findAll())
+                .willReturn(List.of(withdrawnAccount));
+
+        mockMvc.perform(get("/api/accounts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].uuid").value(withdrawnAccount.getUuid().toString()))
+                .andExpect(jsonPath("$.data[0].accountStatus").value("WITHDRAWN"))
+                .andExpect(jsonPath("$.data[0].name").doesNotExist())
+                .andExpect(jsonPath("$.data[0].email").doesNotExist())
+                .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist());
     }
 
     @Test
@@ -76,7 +104,10 @@ class AccountControllerTest {
                 .willReturn(accountList.getFirst());
 
         mockMvc.perform(get("/api/accounts/me"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.uuid").value(accountList.getFirst().getUuid().toString()))
+                .andExpect(jsonPath("$.data.id").doesNotExist())
+                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist());
     }
 
     @Test
@@ -91,7 +122,10 @@ class AccountControllerTest {
         mockMvc.perform(post("/api/accounts/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.uuid").value(accountList.getFirst().getUuid().toString()))
+                .andExpect(jsonPath("$.data.id").doesNotExist())
+                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist());
     }
 
     @Test

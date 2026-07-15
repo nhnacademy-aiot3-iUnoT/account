@@ -53,8 +53,8 @@ class AccountServiceTest {
         );
 
 
-        given(accountRepository.findByEmail(request.email()))
-                .willReturn(Optional.empty());
+        given(accountRepository.existsByEmail(request.email()))
+                .willReturn(false);
 
         given(accountRepository.save(any(Account.class)))
                 .willReturn(account);
@@ -82,7 +82,7 @@ class AccountServiceTest {
         assertEquals(account, result);
 
         then(accountRepository)
-                .should(only())
+                .should()
                 .findByUuid(any(UUID.class));
     }
 
