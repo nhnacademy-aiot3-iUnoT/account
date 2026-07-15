@@ -27,6 +27,7 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout() {
+        // TODO logout
         return ResponseEntity.ok().build();
     }
 }
