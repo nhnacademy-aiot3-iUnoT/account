@@ -86,7 +86,6 @@ public class AccountService {
 
         Account updatedAccount = currentAccount.get();
 
-        updatedAccount.changeEmail(request.email());
         updatedAccount.changeName(request.name());
 
 
