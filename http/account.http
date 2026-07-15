@@ -1,0 +1,17 @@
+### GET Accounts
+GET localhost:8080/api/accounts
+Content-Type: application/json
+
+{
+    "token": "eyJhbGciOiJub25lIn0.eyJpc3MiOiJhY2NvdW50LWFwaSIsInN1YiI6ImRhYzhhM2I4LThhM2QtNGIwMy1hMWU2LWQxNjMwYjhhMWY5OCIsImlhdCI6MTc4NDAxNTQxNiwiZXhwIjoxNzg0MDE3MjE2fQ."
+}
+
+### POST Create Account
+POST localhost:8080/api/accounts
+Content-Type: application/json
+
+{
+  "name": "test",
+  "email": "test@test.com",
+  "password": "testpass"
+}
