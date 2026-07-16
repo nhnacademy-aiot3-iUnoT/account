@@ -1,9 +1,10 @@
 package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
-import com.nhnacademy.account.dto.CreateAccountRequest;
-import com.nhnacademy.account.dto.UpdateAccountRequest;
-import com.nhnacademy.account.dto.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.AccountResponse;
+import com.nhnacademy.account.dto.crud.CreateAccountRequest;
+import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
+import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
 import com.nhnacademy.account.repository.AccountRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +66,7 @@ class AccountServiceTest {
 
         then(accountRepository)
                 .should()
-                .findByEmail(request.email());
+                .existsByEmail(request.email());
 
         then(accountRepository)
                 .should()
@@ -107,7 +108,6 @@ class AccountServiceTest {
         UpdateAccountRequest request = new UpdateAccountRequest(
                 UUID.randomUUID(),
                 "test",
-                "test@test.com",
                 "hashed"
         );
 

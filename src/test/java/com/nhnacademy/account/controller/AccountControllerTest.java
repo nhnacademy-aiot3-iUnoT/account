@@ -2,9 +2,10 @@ package com.nhnacademy.account.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.account.domain.Account;
-import com.nhnacademy.account.dto.CreateAccountRequest;
-import com.nhnacademy.account.dto.UpdateAccountRequest;
-import com.nhnacademy.account.dto.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.AccountResponse;
+import com.nhnacademy.account.dto.crud.CreateAccountRequest;
+import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
+import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
 import com.nhnacademy.account.service.AccountService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,10 +76,7 @@ class AccountControllerTest {
         mockMvc.perform(post("/api/accounts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.uuid").value(accountList.getFirst().getUuid().toString()))
-                .andExpect(jsonPath("$.data.id").doesNotExist())
-                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist());
+                .andExpect(status().isCreated());
     }
 
     @Test
@@ -113,13 +111,13 @@ class AccountControllerTest {
     @Test
     void updateAccount() throws Exception {
         UpdateAccountRequest request = new UpdateAccountRequest(
-                UUID.randomUUID(),"test", "test@test.com", "hashed"
+                UUID.randomUUID(),"test", "hashed"
         );
 
         given(accountService.updateAccount(any(UpdateAccountRequest.class)))
                 .willReturn(accountList.getFirst());
 
-        mockMvc.perform(post("/api/accounts/me")
+        mockMvc.perform(patch("/api/accounts/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

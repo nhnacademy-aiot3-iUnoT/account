@@ -1,14 +1,17 @@
 package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
-import com.nhnacademy.account.dto.CreateAccountRequest;
-import com.nhnacademy.account.dto.UpdateAccountRequest;
-import com.nhnacademy.account.dto.WithdrawAccountRequest;
-import com.nhnacademy.account.exception.AccountNotFoundException;
-import com.nhnacademy.account.exception.EmailAlreadyExistsException;
+import com.nhnacademy.account.dto.AccountResponse;
+import com.nhnacademy.account.dto.EmailAvailabilityRequest;
+import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
+import com.nhnacademy.account.dto.crud.CreateAccountRequest;
+import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
+import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
+import com.nhnacademy.account.exception.*;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +34,13 @@ public class AccountService {
             throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-       return accountRepository.save(account);
+        try {
+            return accountRepository.save(account);
+        } catch (DataIntegrityViolationException e) {
+            // TODO DB에러
+            throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+
     }
 
     public Account findAccount(UUID uuid) {
@@ -54,10 +63,19 @@ public class AccountService {
 
         Account updatedAccount = currentAccount.get();
 
-        updatedAccount.changeName(request.name());
-        // TODO request.password -> hash
-        updatedAccount.changePassword(request.password());
+        if (!updatedAccount.isActive()) {
+            throw new InvalidAccountStateException(ErrorCode.INVALID_ACCOUNT_STATE);
+        }
 
+        if (request.name() != null) {
+            updatedAccount.changeName(request.name());
+        }
+
+
+        if (request.password() != null) {
+            // TODO request.password -> hash
+            updatedAccount.changePassword(request.password());
+        }
         return updatedAccount;
     }
 
@@ -68,6 +86,31 @@ public class AccountService {
         Account account = accountRepository.findByUuid(request.uuid())
                 .orElseThrow(() -> new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
 
+        if (!account.getHashedPassword().equals(request.password())) {
+            throw new InvalidInputException(ErrorCode.INVALID_INPUT);
+        }
+
         account.withdraw();
+    }
+
+    public boolean availableEmail(EmailAvailabilityRequest request) {
+        return accountRepository.existsByEmail(request.email());
+    }
+
+    public boolean availablePassword(UUID uuid, PasswordReuseCheckRequest request) {
+        Optional<Account> accountOptional = accountRepository.findByUuid(uuid);
+        if (accountOptional.isEmpty()) {
+            throw new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        Account account = accountOptional.get();
+
+        // TODO hash
+        if (account.getHashedPassword().equals(request.newPassword())) {
+            // TODO password is same as current
+            throw new SameAsCurrentPasswordException(ErrorCode.INVALID_INPUT);
+        }
+
+        return true;
     }
 }

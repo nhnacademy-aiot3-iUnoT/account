@@ -2,17 +2,20 @@ package com.nhnacademy.account.controller;
 
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.dto.AccountResponse;
-import com.nhnacademy.account.dto.CreateAccountRequest;
-import com.nhnacademy.account.dto.UpdateAccountRequest;
-import com.nhnacademy.account.dto.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.EmailAvailabilityRequest;
+import com.nhnacademy.account.dto.EmailAvailabilityResponse;
+import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
+import com.nhnacademy.account.dto.crud.CreateAccountRequest;
+import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
+import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
 import com.nhnacademy.account.service.AccountService;
 import com.nhnacademy.account.global.util.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -20,20 +23,14 @@ import java.util.List;
 public class AccountController {
     private final AccountService accountService;
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<AccountResponse>>> viewAllAccounts() {
-        List<AccountResponse> accounts = accountService.findAll().stream()
-                .map(AccountResponse::from)
-                .toList();
-        return ResponseEntity.ok(ApiResponse.success(accounts));
-    }
-
     @PostMapping
-    public ResponseEntity<ApiResponse<AccountResponse>> createAccount(
+    public ResponseEntity<ApiResponse<?>> createAccount(
             @Valid @RequestBody CreateAccountRequest request
     ) {
         Account account = accountService.createAccount(request);
-        return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.ok());
     }
 
     @GetMapping("/me")
@@ -42,7 +39,7 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
-    @PostMapping("/me")
+    @PatchMapping("/me")
     public ResponseEntity<ApiResponse<AccountResponse>> updateAccount(
             @Valid @RequestBody UpdateAccountRequest request
     ) {
@@ -57,5 +54,30 @@ public class AccountController {
         accountService.deleteAccount(request);
         return ResponseEntity.ok(ApiResponse.ok());
     }
+
+    @PostMapping("/email")
+    public ResponseEntity<ApiResponse<EmailAvailabilityResponse>> checkEmail(
+            @Valid @RequestBody EmailAvailabilityRequest request
+    ) {
+        boolean available = accountService.availableEmail(request);
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        EmailAvailabilityResponse.from(available)
+                )
+        );
+    }
+
+    @PostMapping("/pwd")
+    public ResponseEntity<ApiResponse<EmailAvailabilityResponse>> checkPassword(
+            @Valid @RequestBody PasswordReuseCheckRequest request
+    ) {
+        boolean available = accountService.availablePassword(/* TODO */ null, request);
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        EmailAvailabilityResponse.from(available)
+                )
+        );
+    }
+
 
 }
