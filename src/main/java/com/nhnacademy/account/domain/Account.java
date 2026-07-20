@@ -190,6 +190,26 @@ public class Account {
 
 
     /**
+     * 관리자 계정 상태 변경
+     */
+    public void changeStatus(AccountStatusAction action) {
+        if (action == null) {
+            throw new InvalidInputException(
+                    ErrorCode.INVALID_INPUT,
+                    "상태 변경 작업은 null일 수 없습니다."
+            );
+        }
+
+        switch (action) {
+            case LOCK -> lock();
+            case UNLOCK -> unlock();
+            case DEACTIVATE -> deactivate();
+            case REACTIVATE -> activate();
+        }
+    }
+
+
+    /**
      * 계정 탈퇴
      *
      * WITHDRAWN은 최종 상태로 취급한다.

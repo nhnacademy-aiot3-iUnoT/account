@@ -125,12 +125,12 @@ class AccountServiceTest {
 
     @Test
     void deleteAccount() {
-        WithdrawAccountRequest request = new WithdrawAccountRequest(UUID.randomUUID());
+        WithdrawAccountRequest request = new WithdrawAccountRequest(UUID.randomUUID(), "hashed");
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.of(account));
 
-        accountService.deleteAccount(request);
+        accountService.withdrawAccount(request);
 
         assertNull(account.getName());
         assertNull(account.getEmail());

@@ -7,6 +7,7 @@ import com.nhnacademy.account.dto.crud.CreateAccountRequest;
 import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
 import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
 import com.nhnacademy.account.service.AccountService;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AccountController.class)
+@Slf4j
+@WebMvcTest({AccountController.class, AccountAdminController.class})
 class AccountControllerTest {
 
     @Autowired
@@ -52,7 +54,7 @@ class AccountControllerTest {
         given(accountService.findAll())
                 .willReturn(accountList);
 
-        mockMvc.perform(get("/api/accounts"))
+        mockMvc.perform(get("/api/admin/accounts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].uuid").value(accountList.getFirst().getUuid().toString()))
                 .andExpect(jsonPath("$.data[0].name").value("test"))
@@ -87,7 +89,7 @@ class AccountControllerTest {
         given(accountService.findAll())
                 .willReturn(List.of(withdrawnAccount));
 
-        mockMvc.perform(get("/api/accounts"))
+        mockMvc.perform(get("/api/admin/accounts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].uuid").value(withdrawnAccount.getUuid().toString()))
                 .andExpect(jsonPath("$.data[0].accountStatus").value("WITHDRAWN"))
@@ -129,7 +131,8 @@ class AccountControllerTest {
     @Test
     void deleteAccount() throws Exception {
         WithdrawAccountRequest request = new WithdrawAccountRequest(
-                UUID.randomUUID()
+                UUID.randomUUID(),
+                "hashed"
         );
 
         mockMvc.perform(delete("/api/accounts/me")

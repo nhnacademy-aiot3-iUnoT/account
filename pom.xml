@@ -28,11 +28,30 @@
     </scm>
     <properties>
         <java.version>21</java.version>
+        <maven.compiler.release>21</maven.compiler.release>
+        <jacoco.version>0.8.14</jacoco.version>
+        <surefire.version>3.5.5</surefire.version>
+        <mockito.version>5.23.0</mockito.version>
+        <maven-dependency-plugin.version>3.11.0</maven-dependency-plugin.version>
+
+        <!-- JaCoCo가 initialize 단계에서 값을 설정한다. -->
+        <!-- 직접 surefire:test 등을 실행할 때의 @{jacocoArgLine} 오류 방지 -->
+        <jacocoArgLine></jacocoArgLine>
+
+        <!-- 프로젝트 정책에 맞게 변경 -->
+        <jacoco.line.minimum>0.80</jacoco.line.minimum>
     </properties>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -90,6 +109,173 @@
                     </excludes>
                 </configuration>
             </plugin>
+
+            <!--
+            ${org.mockito:mockito-core:jar} 형태로
+            Mockito JAR의 실제 파일 경로를 제공한다.
+        -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>${maven-dependency-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>mockito-agent-path</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- JaCoCo agent, report, check -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <!-- 단위·통합 테스트 JVM에 전달할 agent 옵션 생성 -->
+                    <execution>
+                        <id>jacoco-prepare-agent</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Mockito 등의 다른 JVM 옵션과 분리 -->
+                            <propertyName>jacocoArgLine</propertyName>
+
+                            <!-- 단위·통합 테스트가 같은 실행 데이터 사용 -->
+                            <destFile>
+                                ${project.build.directory}/jacoco.exec
+                            </destFile>
+
+                            <!-- Surefire 결과 뒤에 Failsafe 결과 누적 -->
+                            <append>true</append>
+                        </configuration>
+                    </execution>
+
+                    <!-- HTML·XML 리포트 생성 -->
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <dataFile>
+                                ${project.build.directory}/jacoco.exec
+                            </dataFile>
+                            <outputDirectory>
+                                ${project.reporting.outputDirectory}/jacoco
+                            </outputDirectory>
+                            <formats>
+                                <format>HTML</format>
+                                <format>XML</format>
+                            </formats>
+                        </configuration>
+                    </execution>
+
+                    <!-- 커버리지 기준 미달 시 빌드 실패 -->
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <dataFile>
+                                ${project.build.directory}/jacoco.exec
+                            </dataFile>
+                            <haltOnFailure>true</haltOnFailure>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>
+                                                ${jacoco.line.minimum}
+                                            </minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- 단위 테스트: *Test -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
+
+                    <!--
+                        JaCoCo agent + Mockito agent.
+                        -Xshare:off는 앞서 발생한 CDS 경고를 숨길 때만 유지한다.
+                    -->
+                    <argLine>
+                        @{jacocoArgLine}
+                        -javaagent:${org.mockito:mockito-core:jar}
+                        -Xshare:off
+                    </argLine>
+
+                    <reportsDirectory>
+                        ${project.build.directory}/surefire-reports
+                    </reportsDirectory>
+
+                    <!-- 전체 실패 스택과 테스트 출력을 파일에 보존 -->
+                    <trimStackTrace>false</trimStackTrace>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                </configuration>
+            </plugin>
+
+            <!-- 통합 테스트: *IT -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${surefire.version}</version>
+                <executions>
+                    <execution>
+                        <id>integration-tests</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includes>
+                        <include>**/*IT.java</include>
+                    </includes>
+
+                    <argLine>
+                        @{jacocoArgLine}
+                        -javaagent:${org.mockito:mockito-core:jar}
+                        -Xshare:off
+                    </argLine>
+
+                    <reportsDirectory>
+                        ${project.build.directory}/failsafe-reports
+                    </reportsDirectory>
+
+                    <trimStackTrace>false</trimStackTrace>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                </configuration>
+            </plugin>
+
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -48,10 +48,10 @@ public class AccountController {
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<ApiResponse<Void>> deleteAccount(
+    public ResponseEntity<ApiResponse<Void>> withdrawAccount(
             @Valid @RequestBody WithdrawAccountRequest request
     ) {
-        accountService.deleteAccount(request);
+        accountService.withdrawAccount(request);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 

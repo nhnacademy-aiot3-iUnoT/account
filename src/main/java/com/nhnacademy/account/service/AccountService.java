@@ -1,7 +1,8 @@
 package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
-import com.nhnacademy.account.dto.AccountResponse;
+import com.nhnacademy.account.domain.AccountRole;
+import com.nhnacademy.account.dto.ChangeAccountStatusRequest;
 import com.nhnacademy.account.dto.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.crud.CreateAccountRequest;
@@ -37,10 +38,23 @@ public class AccountService {
         try {
             return accountRepository.save(account);
         } catch (DataIntegrityViolationException e) {
-            // TODO DB에러
             throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
+    }
+
+    @Transactional
+    public Account createAdminAccount(CreateAccountRequest request) {
+        Account account = new Account(request.name(), request.email(), request.password(), AccountRole.ADMIN);
+        if (accountRepository.existsByEmail(account.getEmail())) {
+            throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+
+        try {
+            return accountRepository.save(account);
+        } catch (DataIntegrityViolationException e) {
+            throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
     }
 
     public Account findAccount(UUID uuid) {
@@ -50,6 +64,15 @@ public class AccountService {
 
     public List<Account> findAll() {
         return accountRepository.findAll();
+    }
+
+    @Transactional
+    public Account changeAccountStatus(UUID uuid, ChangeAccountStatusRequest request) {
+        Account account = accountRepository.findByUuid(uuid)
+                .orElseThrow(() -> new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        account.changeStatus(request.action());
+        return account;
     }
 
     @Transactional
@@ -82,7 +105,7 @@ public class AccountService {
 
 
     @Transactional
-    public void deleteAccount(WithdrawAccountRequest request) {
+    public void withdrawAccount(WithdrawAccountRequest request) {
         Account account = accountRepository.findByUuid(request.uuid())
                 .orElseThrow(() -> new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
 
