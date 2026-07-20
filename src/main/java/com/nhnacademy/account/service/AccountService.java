@@ -1,14 +1,18 @@
 package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
-import com.nhnacademy.account.dto.CreateAccountRequest;
-import com.nhnacademy.account.dto.UpdateAccountRequest;
-import com.nhnacademy.account.dto.WithdrawAccountRequest;
-import com.nhnacademy.account.exception.AccountNotFoundException;
-import com.nhnacademy.account.exception.EmailAlreadyExistsException;
+import com.nhnacademy.account.domain.AccountRole;
+import com.nhnacademy.account.dto.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.EmailAvailabilityRequest;
+import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
+import com.nhnacademy.account.dto.crud.CreateAccountRequest;
+import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
+import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
+import com.nhnacademy.account.exception.*;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,13 +93,6 @@ public class AccountService {
         updatedAccount.changeName(request.name());
 
 
-        String hashedPassword = passwordEncoder.encode(request.password());
-        updatedAccount.changeHashedPassword(hashedPassword);
-
-
-        String hashedPassword = passwordEncoder.encode(request.password());
-        updatedAccount.changeHashedPassword(hashedPassword);
-
         if (!updatedAccount.isActive()) {
             throw new InvalidAccountStateException(ErrorCode.INVALID_ACCOUNT_STATE);
         }
@@ -106,8 +103,8 @@ public class AccountService {
 
 
         if (request.password() != null) {
-            // TODO request.password -> hash
-            updatedAccount.changePassword(request.password());
+            String hashedPassword = passwordEncoder.encode(request.password());
+            updatedAccount.changeHashedPassword(hashedPassword);
         }
         return updatedAccount;
     }
@@ -138,9 +135,10 @@ public class AccountService {
 
         Account account = accountOptional.get();
 
-        // TODO hash
-        if (account.getHashedPassword().equals(request.newPassword())) {
-            // TODO password is same as current
+        String requestPasswordHash = passwordEncoder.encode(request.newPassword());
+
+        // password is same as current
+        if (account.getHashedPassword().equals(requestPasswordHash)) {
             throw new SameAsCurrentPasswordException(ErrorCode.INVALID_INPUT);
         }
 
