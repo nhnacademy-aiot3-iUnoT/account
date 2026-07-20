@@ -1,10 +1,15 @@
 package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
+import com.nhnacademy.account.domain.AccountStatusAction;
 import com.nhnacademy.account.dto.AccountResponse;
+import com.nhnacademy.account.dto.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.EmailAvailabilityRequest;
+import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.crud.CreateAccountRequest;
 import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
 import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
+import com.nhnacademy.account.exception.*;
 import com.nhnacademy.account.repository.AccountRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +79,97 @@ class AccountServiceTest {
     }
 
     @Test
+    void createAccountWithExistingEmail() {
+        CreateAccountRequest request = new CreateAccountRequest(
+                "test",
+                "test@test.com",
+                "hashed"
+        );
+
+        given(accountRepository.existsByEmail(request.email()))
+                .willReturn(true);
+
+        assertThrows(EmailAlreadyExistsException.class,
+                () -> accountService.createAccount(request));
+
+
+    }
+
+    @Test
+    void createAdminAccount() {
+        CreateAccountRequest request = new CreateAccountRequest(
+                "test",
+                "test@test.com",
+                "hashed"
+        );
+
+
+        given(accountRepository.existsByEmail(request.email()))
+                .willReturn(false);
+
+        given(accountRepository.save(any(Account.class)))
+                .willReturn(account);
+
+        Account result = accountService.createAdminAccount(request);
+
+        assertEquals(account, result);
+
+        then(accountRepository)
+                .should()
+                .existsByEmail(request.email());
+
+        then(accountRepository)
+                .should()
+                .save(any(Account.class));
+    }
+
+    @Test
+    void createAdminAccountWithExistingEmail() {
+        CreateAccountRequest request = new CreateAccountRequest(
+                "test",
+                "test@test.com",
+                "hashed"
+        );
+
+        given(accountRepository.existsByEmail(request.email()))
+                .willReturn(true);
+
+        assertThrows(EmailAlreadyExistsException.class,
+                () -> accountService.createAdminAccount(request));
+
+
+    }
+
+    @Test
+    void changeAccountStatus() {
+        UUID uuid = UUID.randomUUID();
+        ChangeAccountStatusRequest request = new ChangeAccountStatusRequest(AccountStatusAction.DEACTIVATE, uuid.toString());
+
+        Account before = account;
+        Account after = new Account(account.getName(), account.getEmail(), account.getHashedPassword(), account.getAccountRole());
+        after.changeStatus(AccountStatusAction.DEACTIVATE);
+
+        given(accountRepository.findByUuid(any(UUID.class)))
+                .willReturn(Optional.of(before));
+
+        Account acc = accountService.changeAccountStatus(uuid, request);
+
+        assertEquals(after.getAccountStatus(), acc.getAccountStatus());
+    }
+
+    @Test
+    void changeAccountStatusWithNotFoundUuid() {
+        UUID uuid = UUID.randomUUID();
+        ChangeAccountStatusRequest request = new ChangeAccountStatusRequest(AccountStatusAction.DEACTIVATE, uuid.toString());
+
+        given(accountRepository.findByUuid(any(UUID.class)))
+                .willReturn(Optional.empty());
+
+        assertThrows(AccountNotFoundException.class,
+                () -> accountService.changeAccountStatus(uuid, request));
+    }
+
+    @Test
     void findAccount() {
         given(accountRepository.findByUuid(any(UUID.class)))
             .willReturn(Optional.of(account));
@@ -124,7 +220,42 @@ class AccountServiceTest {
     }
 
     @Test
-    void deleteAccount() {
+    void updateAccountWithNotFoundUuid() {
+        UpdateAccountRequest request = new UpdateAccountRequest(
+                UUID.randomUUID(),
+                "test",
+                "hashed"
+        );
+
+        given(accountRepository.findByUuid(any(UUID.class)))
+                .willReturn(Optional.empty());
+
+        assertThrows(AccountNotFoundException.class,
+                () -> accountService.updateAccount(request));
+    }
+
+    @Test
+    void updateAccountWithInvalidState() {
+        UpdateAccountRequest request = new UpdateAccountRequest(
+                UUID.randomUUID(),
+                "test",
+                "hashed"
+        );
+
+        Account notActive = new Account(account.getName(), account.getEmail(), account.getHashedPassword(), account.getAccountRole());
+        notActive.changeStatus(AccountStatusAction.DEACTIVATE);
+
+        given(accountRepository.findByUuid(any(UUID.class)))
+                .willReturn(Optional.of(notActive));
+
+        assertThrows(InvalidAccountStateException.class,
+                () -> accountService.updateAccount(request));
+    }
+
+
+
+    @Test
+    void withdrawAccount() {
         WithdrawAccountRequest request = new WithdrawAccountRequest(UUID.randomUUID(), "hashed");
 
         given(accountRepository.findByUuid(any(UUID.class)))
@@ -136,4 +267,70 @@ class AccountServiceTest {
         assertNull(account.getEmail());
         assertNull(account.getHashedPassword());
     }
+
+    @Test
+    void withdrawAccountWithWrongPassword() {
+        WithdrawAccountRequest request = new WithdrawAccountRequest(UUID.randomUUID(), "wrong-password");
+
+        given(accountRepository.findByUuid(any(UUID.class)))
+                .willReturn(Optional.of(account));
+
+        assertThrows(InvalidInputException.class,
+                () -> accountService.withdrawAccount(request));
+    }
+
+    @Test
+    void availableEmailTrueTest() {
+        EmailAvailabilityRequest request = new EmailAvailabilityRequest("test@test.com");
+
+        given(accountRepository.existsByEmail(any(String.class)))
+                .willReturn(true);
+
+        assertTrue(accountService.availableEmail(request));
+
+    }
+
+    @Test
+    void availableEmailFalseTest() {
+        EmailAvailabilityRequest request = new EmailAvailabilityRequest("test@test.com");
+
+        given(accountRepository.existsByEmail(any(String.class)))
+                .willReturn(false);
+
+        assertFalse(accountService.availableEmail(request));
+
+    }
+
+    @Test
+    void availablePasswordTrueTest() {
+        PasswordReuseCheckRequest request = new PasswordReuseCheckRequest("password");
+
+        given(accountRepository.findByUuid(any(UUID.class)))
+                .willReturn(Optional.of(account));
+
+        assertTrue(accountService.availablePassword(UUID.randomUUID(), request));
+    }
+
+    @Test
+    void availablePasswordNotFoundAccount() {
+        PasswordReuseCheckRequest request = new PasswordReuseCheckRequest("test");
+
+        given(accountRepository.findByUuid(any(UUID.class)))
+                .willReturn(Optional.empty());
+
+        assertThrows(AccountNotFoundException.class,
+                () -> accountService.availablePassword(UUID.randomUUID(), request));
+    }
+
+    @Test
+    void availablePasswordSameAsCurrentPassword() {
+        PasswordReuseCheckRequest request = new PasswordReuseCheckRequest("hashed");
+
+        given(accountRepository.findByUuid(any(UUID.class)))
+                .willReturn(Optional.of(account));
+
+        assertThrows(SameAsCurrentPasswordException.class,
+                () -> accountService.availablePassword(UUID.randomUUID(), request));
+    }
+
 }

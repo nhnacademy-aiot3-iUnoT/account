@@ -134,6 +134,25 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+                <!--
+                    행 자체를 실행하는 것보다 실제 비즈니스 규칙을 검증하는 데
+                    커버리지 기준을 집중한다. 도메인, 서비스, 컨트롤러와 예외
+                    처리 로직은 제외하지 않는다.
+                -->
+                <configuration>
+                    <excludes>
+                        <!-- Spring Boot 진입점과 단순 구성 클래스 -->
+                        <exclude>**/*Application.class</exclude>
+                        <exclude>**/config/**</exclude>
+
+                        <!-- 데이터 운반만 담당하는 요청·응답 DTO -->
+                        <exclude>**/dto/**</exclude>
+
+                        <!-- 코드 생성기가 만든 소스·클래스의 일반적인 위치와 이름 -->
+                        <exclude>**/generated/**</exclude>
+                        <exclude>**/*Generated*.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <!-- 단위·통합 테스트 JVM에 전달할 agent 옵션 생성 -->
                     <execution>

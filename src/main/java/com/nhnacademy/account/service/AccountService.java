@@ -38,6 +38,7 @@ public class AccountService {
         try {
             return accountRepository.save(account);
         } catch (DataIntegrityViolationException e) {
+            // TODO DB 예외
             throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
@@ -53,6 +54,7 @@ public class AccountService {
         try {
             return accountRepository.save(account);
         } catch (DataIntegrityViolationException e) {
+            // TODO DB 예외
             throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
     }
