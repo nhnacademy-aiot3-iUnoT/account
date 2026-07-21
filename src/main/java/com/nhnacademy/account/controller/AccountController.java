@@ -1,5 +1,6 @@
 package com.nhnacademy.account.controller;
 
+import com.nhnacademy.auth.jwt.AccountUUID;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.dto.AccountResponse;
 import com.nhnacademy.account.dto.EmailAvailabilityRequest;
@@ -15,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 
 @RestController
@@ -34,8 +37,10 @@ public class AccountController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<AccountResponse>> getCurrentAccount() {
-        Account account = accountService.findAccount(/* TODO */ null);
+    public ResponseEntity<ApiResponse<AccountResponse>> getCurrentAccount(
+            @AccountUUID UUID accountUuid
+    ) {
+        Account account = accountService.findAccount(accountUuid);
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
@@ -69,9 +74,10 @@ public class AccountController {
 
     @PostMapping("/pwd")
     public ResponseEntity<ApiResponse<EmailAvailabilityResponse>> checkPassword(
+            @AccountUUID UUID accountUuid,
             @Valid @RequestBody PasswordReuseCheckRequest request
     ) {
-        boolean available = accountService.availablePassword(/* TODO */ null, request);
+        boolean available = accountService.availablePassword(accountUuid, request);
         return ResponseEntity.ok(
                 ApiResponse.success(
                         EmailAvailabilityResponse.from(available)

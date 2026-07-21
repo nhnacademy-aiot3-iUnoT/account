@@ -1,17 +1,156 @@
-### GET Accounts
-GET localhost:8080/api/accounts
-Content-Type: application/json
+@baseUrl = http://localhost:8080
+@email = test@test.com
+@password = testpass
+@newPassword = changedpass
 
-{
-    "token": "eyJhbGciOiJub25lIn0.eyJpc3MiOiJhY2NvdW50LWFwaSIsInN1YiI6ImRhYzhhM2I4LThhM2QtNGIwMy1hMWU2LWQxNjMwYjhhMWY5OCIsImlhdCI6MTc4NDAxNTQxNiwiZXhwIjoxNzg0MDE3MjE2fQ."
-}
+### JWK 공개 키 조회
+GET {{baseUrl}}/.well-known/jwks.json
+Accept: application/json
 
-### POST Create Account
-POST localhost:8080/api/accounts
+### 회원 가입
+POST {{baseUrl}}/api/accounts
 Content-Type: application/json
 
 {
   "name": "test",
-  "email": "test@test.com",
-  "password": "testpass"
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### 로그인 - accessToken 자동 저장
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.test("로그인 성공", function () {
+        client.assert(response.status === 200, "응답 상태가 200이 아닙니다.");
+        client.assert(response.body.data.accessToken, "accessToken이 없습니다.");
+    });
+    client.global.set("accessToken", response.body.data.accessToken);
+%}
+
+### 내 계정 조회 - accountUuid 자동 저장
+# @name getMe
+GET {{baseUrl}}/api/accounts/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+> {%
+    client.test("내 계정 조회 성공", function () {
+        client.assert(response.status === 200, "응답 상태가 200이 아닙니다.");
+        client.assert(response.body.data.uuid, "계정 UUID가 없습니다.");
+    });
+    client.global.set("accountUuid", response.body.data.uuid);
+%}
+
+### 이메일 중복 확인
+POST {{baseUrl}}/api/accounts/email
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### 비밀번호 재사용 가능 여부 확인
+POST {{baseUrl}}/api/accounts/pwd
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "newPassword": "{{newPassword}}"
+}
+
+### 내 계정 수정
+# 실행 후 로그인 비밀번호가 newPassword로 변경됩니다.
+PATCH {{baseUrl}}/api/accounts/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "uuid": "{{accountUuid}}",
+  "name": "updated-test",
+  "password": "{{newPassword}}"
+}
+
+### 로그아웃
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{accessToken}}
+
+### 관리자 - 전체 계정 조회
+GET {{baseUrl}}/api/admin/accounts
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### 관리자 - 계정 단건 조회
+GET {{baseUrl}}/api/admin/accounts/{{accountUuid}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### 관리자 - 계정 생성
+POST {{baseUrl}}/api/admin/accounts
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "admin",
+  "email": "admin@test.com",
+  "password": "adminpass"
+}
+
+### 관리자 - 계정 수정
+PATCH {{baseUrl}}/api/admin/accounts/{{accountUuid}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "uuid": "{{accountUuid}}",
+  "name": "admin-updated",
+  "password": null
+}
+
+### 관리자 - 계정 잠금
+PATCH {{baseUrl}}/api/admin/accounts/{{accountUuid}}/status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "action": "LOCK",
+  "reason": "API 테스트"
+}
+
+### 관리자 - 계정 잠금 해제
+PATCH {{baseUrl}}/api/admin/accounts/{{accountUuid}}/status
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "action": "UNLOCK",
+  "reason": "API 테스트 완료"
+}
+
+### 내 계정 탈퇴 (마지막에 실행)
+DELETE {{baseUrl}}/api/accounts/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "uuid": "{{accountUuid}}",
+  "password": "{{newPassword}}"
+}
+
+### 관리자 - 계정 탈퇴 (마지막에 실행)
+DELETE {{baseUrl}}/api/admin/accounts/{{accountUuid}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "uuid": "{{accountUuid}}",
+  "password": "{{newPassword}}"
 }

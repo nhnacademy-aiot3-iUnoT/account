@@ -15,7 +15,6 @@ import java.util.UUID;
 public class JwtProvider {
     private static final Duration ACCESS_TOKEN_EXPIRATION = Duration.ofMinutes(30);
 
-    // TODO 대칭키 or 비대칭키
     private final PrivateKey jwtPrivateKey;
 
     public String createAccessToken(UUID accountUuid) {
@@ -27,6 +26,7 @@ public class JwtProvider {
                     .keyId("account-key-001")
                     .and()
                 .issuer("account-api")
+                .audience().add("account-api").and()
                 .subject(accountUuid.toString())
                 .issuedAt(Date.from(issuedAt))
                 .expiration(Date.from(expiresAt))
