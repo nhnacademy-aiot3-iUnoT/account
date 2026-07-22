@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,24 +21,26 @@ public class Account {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long accountId;
 
     /**
      * 외부 공개 식별자
      * JWT subject(sub)로 사용
      */
+    @JdbcTypeCode(SqlTypes.BINARY)
     @Column(
             name = "uuid",
             nullable = false,
             unique = true,
-            updatable = false
+            updatable = false,
+            columnDefinition = "BINARY(16)"
     )
     private UUID uuid;
 
     @Column(
             name = "email",
             unique = true,
-            length = 32
+            length = 254
     )
     private String email;
 
@@ -48,7 +52,7 @@ public class Account {
 
     @Column(
             name = "name",
-            length = 16
+            length = 100
     )
     private String name;
 
@@ -56,7 +60,7 @@ public class Account {
     @Column(
             name = "account_status",
             nullable = false,
-            length = 20
+            length = 32
     )
     private AccountStatus accountStatus;
 
@@ -64,7 +68,7 @@ public class Account {
     @Column(
             name = "account_role",
             nullable = false,
-            length = 20
+            length = 32
     )
     private AccountRole accountRole;
 
@@ -288,7 +292,6 @@ public class Account {
         this.createdAt = now;
         this.updatedAt = now;
     }
-
 
     @PreUpdate
     private void preUpdate() {
