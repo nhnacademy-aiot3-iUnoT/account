@@ -78,9 +78,9 @@ public class AccountService {
     }
 
     @Transactional
-    public Account updateAccount(UpdateAccountRequest request) {
+    public Account updateAccount(UUID uuid, UpdateAccountRequest request) {
 
-        Optional<Account> currentAccount = accountRepository.findByUuid(request.uuid());
+        Optional<Account> currentAccount = accountRepository.findByUuid(uuid);
 
         if (currentAccount.isEmpty()) {
             throw new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
@@ -107,8 +107,8 @@ public class AccountService {
 
 
     @Transactional
-    public void withdrawAccount(WithdrawAccountRequest request) {
-        Account account = accountRepository.findByUuid(request.uuid())
+    public void withdrawAccount(UUID uuid, WithdrawAccountRequest request) {
+        Account account = accountRepository.findByUuid(uuid)
                 .orElseThrow(() -> new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
 
         if (!account.getHashedPassword().equals(request.password())) {

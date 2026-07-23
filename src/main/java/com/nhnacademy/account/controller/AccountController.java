@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -34,24 +36,32 @@ public class AccountController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<AccountResponse>> getCurrentAccount() {
-        Account account = accountService.findAccount(/* TODO */ null);
+    public ResponseEntity<ApiResponse<AccountResponse>> getCurrentAccount(
+            @RequestHeader("X-USER-ID") String uuidStr
+    ) {
+        UUID uuid = UUID.fromString(uuidStr);
+        Account account = accountService.findAccount(uuid);
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
     @PatchMapping("/me")
     public ResponseEntity<ApiResponse<AccountResponse>> updateAccount(
-            @Valid @RequestBody UpdateAccountRequest request
+            @Valid @RequestBody UpdateAccountRequest request,
+            @RequestHeader("X-USER-ID") String uuidStr
     ) {
-        Account account = accountService.updateAccount(request);
+        UUID uuid = UUID.fromString(uuidStr);
+        Account account = accountService.updateAccount(uuid, request);
+
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
     @DeleteMapping("/me")
     public ResponseEntity<ApiResponse<Void>> withdrawAccount(
-            @Valid @RequestBody WithdrawAccountRequest request
+            @Valid @RequestBody WithdrawAccountRequest request,
+            @RequestHeader("X-USER-ID") String uuidStr
     ) {
-        accountService.withdrawAccount(request);
+        UUID uuid = UUID.fromString(uuidStr);
+        accountService.withdrawAccount(uuid, request);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
@@ -69,9 +79,11 @@ public class AccountController {
 
     @PostMapping("/pwd")
     public ResponseEntity<ApiResponse<EmailAvailabilityResponse>> checkPassword(
-            @Valid @RequestBody PasswordReuseCheckRequest request
+            @Valid @RequestBody PasswordReuseCheckRequest request,
+            @RequestHeader("X-USER-ID") String uuidStr
     ) {
-        boolean available = accountService.availablePassword(/* TODO */ null, request);
+        UUID uuid = UUID.fromString(uuidStr);
+        boolean available = accountService.availablePassword(uuid, request);
         return ResponseEntity.ok(
                 ApiResponse.success(
                         EmailAvailabilityResponse.from(available)

@@ -202,15 +202,15 @@ class AccountServiceTest {
     @Test
     void updateAccount() {
         UpdateAccountRequest request = new UpdateAccountRequest(
-                UUID.randomUUID(),
                 "test",
                 "hashed"
         );
+        UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(any(UUID.class)))
             .willReturn(Optional.of(account));
 
-        Account result = accountService.updateAccount(request);
+        Account result = accountService.updateAccount(uuid, request);
 
         assertEquals(account, result);
 
@@ -222,25 +222,25 @@ class AccountServiceTest {
     @Test
     void updateAccountWithNotFoundUuid() {
         UpdateAccountRequest request = new UpdateAccountRequest(
-                UUID.randomUUID(),
                 "test",
                 "hashed"
         );
+        UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.empty());
 
         assertThrows(AccountNotFoundException.class,
-                () -> accountService.updateAccount(request));
+                () -> accountService.updateAccount(uuid, request));
     }
 
     @Test
     void updateAccountWithInvalidState() {
         UpdateAccountRequest request = new UpdateAccountRequest(
-                UUID.randomUUID(),
                 "test",
                 "hashed"
         );
+        UUID uuid = UUID.randomUUID();
 
         Account notActive = new Account(account.getName(), account.getEmail(), account.getHashedPassword(), account.getAccountRole());
         notActive.changeStatus(AccountStatusAction.DEACTIVATE);
@@ -249,19 +249,20 @@ class AccountServiceTest {
                 .willReturn(Optional.of(notActive));
 
         assertThrows(InvalidAccountStateException.class,
-                () -> accountService.updateAccount(request));
+                () -> accountService.updateAccount(uuid, request));
     }
 
 
 
     @Test
     void withdrawAccount() {
-        WithdrawAccountRequest request = new WithdrawAccountRequest(UUID.randomUUID(), "hashed");
+        WithdrawAccountRequest request = new WithdrawAccountRequest("hashed");
+        UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.of(account));
 
-        accountService.withdrawAccount(request);
+        accountService.withdrawAccount(uuid, request);
 
         assertNull(account.getName());
         assertNull(account.getEmail());
@@ -270,13 +271,14 @@ class AccountServiceTest {
 
     @Test
     void withdrawAccountWithWrongPassword() {
-        WithdrawAccountRequest request = new WithdrawAccountRequest(UUID.randomUUID(), "wrong-password");
+        WithdrawAccountRequest request = new WithdrawAccountRequest("wrong-password");
+        UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.of(account));
 
         assertThrows(InvalidInputException.class,
-                () -> accountService.withdrawAccount(request));
+                () -> accountService.withdrawAccount(uuid, request));
     }
 
     @Test

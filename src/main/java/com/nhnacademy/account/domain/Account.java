@@ -36,7 +36,8 @@ public class Account {
     @Column(
             name = "email",
             unique = true,
-            length = 32
+            nullable = false,
+            length = 255
     )
     private String email;
 
@@ -48,7 +49,8 @@ public class Account {
 
     @Column(
             name = "name",
-            length = 16
+            nullable = false,
+            length = 255
     )
     private String name;
 
@@ -56,7 +58,7 @@ public class Account {
     @Column(
             name = "account_status",
             nullable = false,
-            length = 20
+            length = 30
     )
     private AccountStatus accountStatus;
 
@@ -64,7 +66,7 @@ public class Account {
     @Column(
             name = "account_role",
             nullable = false,
-            length = 20
+            length = 30
     )
     private AccountRole accountRole;
 
@@ -226,10 +228,6 @@ public class Account {
         this.accountStatus = AccountStatus.WITHDRAWN;
         this.withdrawnAt = now;
 
-        // 개인정보 제거
-        this.email = null;
-        this.hashedPassword = null;
-        this.name = null;
     }
 
 
@@ -246,6 +244,14 @@ public class Account {
      */
     public boolean isWithdrawn() {
         return this.accountStatus == AccountStatus.WITHDRAWN;
+    }
+
+    public boolean isLocked() {
+        return this.accountStatus == AccountStatus.LOCKED;
+    }
+
+    public boolean isAdmin() {
+        return AccountRole.ADMIN.equals(this.accountRole);
     }
 
 

@@ -113,13 +113,14 @@ class AccountControllerTest {
     @Test
     void updateAccount() throws Exception {
         UpdateAccountRequest request = new UpdateAccountRequest(
-                UUID.randomUUID(),"test", "hashed"
+                "test", "hashed"
         );
 
-        given(accountService.updateAccount(any(UpdateAccountRequest.class)))
+        given(accountService.updateAccount(any(UUID.class), any(UpdateAccountRequest.class)))
                 .willReturn(accountList.getFirst());
 
         mockMvc.perform(patch("/api/accounts/me")
+                        .header("X-USER-ID", accountList.getFirst().getUuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -131,11 +132,11 @@ class AccountControllerTest {
     @Test
     void deleteAccount() throws Exception {
         WithdrawAccountRequest request = new WithdrawAccountRequest(
-                UUID.randomUUID(),
                 "hashed"
         );
 
         mockMvc.perform(delete("/api/accounts/me")
+                        .header("X-USER-ID", accountList.getFirst().getUuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
