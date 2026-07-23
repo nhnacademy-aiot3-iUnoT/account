@@ -10,16 +10,14 @@ import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.repository.AccountRepository;
 import com.nhnacademy.account.security.JwtProvider;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class AuthService {
+public class 경AuthService {
 
     private final AccountRepository accountRepository;
-    private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
 
