@@ -252,6 +252,11 @@ public class Account {
         return this.accountStatus == AccountStatus.WITHDRAWN;
     }
 
+    public boolean isLocked() {
+        return this.accountStatus == AccountStatus.LOCKED;
+    }
+
+
 
     private void validateActive() {
         if (this.accountStatus != AccountStatus.ACTIVE) {
