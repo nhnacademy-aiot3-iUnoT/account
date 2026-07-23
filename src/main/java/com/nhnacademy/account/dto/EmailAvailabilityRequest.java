@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 public record EmailAvailabilityRequest(
         @Email
         @NotBlank
-        @Size(max = 32)
+        @Size(max = 254)
         String email
 ) {
 }

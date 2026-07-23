@@ -9,7 +9,7 @@ public record UpdateAccountRequest(
         @NotNull
         UUID uuid,
 
-        @Size(max = 16)
+        @Size(min = 1, max = 100)
         String name,
 
         @Size(min = 6, max = 64)
