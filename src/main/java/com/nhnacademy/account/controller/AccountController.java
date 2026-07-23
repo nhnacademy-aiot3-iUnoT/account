@@ -46,17 +46,19 @@ public class AccountController {
 
     @PatchMapping("/me")
     public ResponseEntity<ApiResponse<AccountResponse>> updateAccount(
+            @AccountUUID UUID accountUuid,
             @Valid @RequestBody UpdateAccountRequest request
     ) {
-        Account account = accountService.updateAccount(request);
+        Account account = accountService.updateAccount(accountUuid, request);
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
     @DeleteMapping("/me")
     public ResponseEntity<ApiResponse<Void>> withdrawAccount(
+            @AccountUUID UUID accountUuid,
             @Valid @RequestBody WithdrawAccountRequest request
     ) {
-        accountService.withdrawAccount(request);
+        accountService.withdrawAccount(accountUuid, request);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 

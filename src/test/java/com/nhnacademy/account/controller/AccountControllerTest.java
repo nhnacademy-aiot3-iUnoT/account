@@ -1,19 +1,28 @@
 package com.nhnacademy.account.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nhnacademy.auth.jwt.AccountJwtWebMvcConfiguration;
+import com.nhnacademy.auth.jwt.AccountUuidArgumentResolver;
 import com.nhnacademy.account.domain.Account;
+import com.nhnacademy.account.domain.AccountRole;
 import com.nhnacademy.account.dto.AccountResponse;
 import com.nhnacademy.account.dto.crud.CreateAccountRequest;
 import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
 import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
 import com.nhnacademy.account.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -27,6 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @Slf4j
 @WebMvcTest({AccountController.class, AccountAdminController.class})
+@Import({AccountUuidArgumentResolver.class, AccountJwtWebMvcConfiguration.class})
+@TestPropertySource(properties = "nhn.auth.jwt.enabled=true")
 class AccountControllerTest {
 
     @Autowired
@@ -47,12 +58,22 @@ class AccountControllerTest {
         );
     }
 
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
 
     @Test
     void viewAllAccounts() throws Exception {
+        Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
 
+        given(accountService.findAccount(admin.getUuid()))
+                .willReturn(admin);
         given(accountService.findAll())
                 .willReturn(accountList);
+
+        authenticate(admin.getUuid());
 
         mockMvc.perform(get("/api/admin/accounts"))
                 .andExpect(status().isOk())
@@ -83,11 +104,16 @@ class AccountControllerTest {
 
     @Test
     void withdrawnAccountDoesNotExposeRemovedPersonalInformation() throws Exception {
+        Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
         Account withdrawnAccount = accountList.getFirst();
         withdrawnAccount.withdraw();
 
+        given(accountService.findAccount(admin.getUuid()))
+                .willReturn(admin);
         given(accountService.findAll())
                 .willReturn(List.of(withdrawnAccount));
+
+        authenticate(admin.getUuid());
 
         mockMvc.perform(get("/api/admin/accounts"))
                 .andExpect(status().isOk())
@@ -100,8 +126,12 @@ class AccountControllerTest {
 
     @Test
     void getCurrentAccount() throws Exception {
-        given(accountService.findAccount(any()))
+        Account account = accountList.getFirst();
+
+        given(accountService.findAccount(account.getUuid()))
                 .willReturn(accountList.getFirst());
+
+        authenticate(account.getUuid());
 
         mockMvc.perform(get("/api/accounts/me"))
                 .andExpect(status().isOk())
@@ -113,11 +143,14 @@ class AccountControllerTest {
     @Test
     void updateAccount() throws Exception {
         UpdateAccountRequest request = new UpdateAccountRequest(
-                UUID.randomUUID(),"test", "hashed"
+                "test", "hashed"
         );
+        Account account = accountList.getFirst();
 
-        given(accountService.updateAccount(any(UpdateAccountRequest.class)))
+        given(accountService.updateAccount(account.getUuid(), request))
                 .willReturn(accountList.getFirst());
+
+        authenticate(account.getUuid());
 
         mockMvc.perform(patch("/api/accounts/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -131,13 +164,25 @@ class AccountControllerTest {
     @Test
     void deleteAccount() throws Exception {
         WithdrawAccountRequest request = new WithdrawAccountRequest(
-                UUID.randomUUID(),
                 "hashed"
         );
+        Account account = accountList.getFirst();
+
+        authenticate(account.getUuid());
 
         mockMvc.perform(delete("/api/accounts/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
+    }
+
+    private void authenticate(UUID accountUuid) {
+        Jwt jwt = Jwt.withTokenValue("token")
+                .header("alg", "RS256")
+                .subject(accountUuid.toString())
+                .build();
+        JwtAuthenticationToken authentication = new JwtAuthenticationToken(jwt);
+        authentication.setAuthenticated(true);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 }

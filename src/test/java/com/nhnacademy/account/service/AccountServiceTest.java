@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +35,9 @@ class AccountServiceTest {
 
     @Mock
     private AccountRepository accountRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private AccountService accountService;
@@ -62,6 +66,9 @@ class AccountServiceTest {
         given(accountRepository.existsByEmail(request.email()))
                 .willReturn(false);
 
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("hashed");
+
         given(accountRepository.save(any(Account.class)))
                 .willReturn(account);
 
@@ -89,6 +96,9 @@ class AccountServiceTest {
         given(accountRepository.existsByEmail(request.email()))
                 .willReturn(true);
 
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("hashed");
+
         assertThrows(EmailAlreadyExistsException.class,
                 () -> accountService.createAccount(request));
 
@@ -106,6 +116,9 @@ class AccountServiceTest {
 
         given(accountRepository.existsByEmail(request.email()))
                 .willReturn(false);
+
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("hashed");
 
         given(accountRepository.save(any(Account.class)))
                 .willReturn(account);
@@ -133,6 +146,9 @@ class AccountServiceTest {
 
         given(accountRepository.existsByEmail(request.email()))
                 .willReturn(true);
+
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("hashed");
 
         assertThrows(EmailAlreadyExistsException.class,
                 () -> accountService.createAdminAccount(request));
@@ -202,15 +218,18 @@ class AccountServiceTest {
     @Test
     void updateAccount() {
         UpdateAccountRequest request = new UpdateAccountRequest(
-                UUID.randomUUID(),
                 "test",
                 "hashed"
         );
+        UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(any(UUID.class)))
             .willReturn(Optional.of(account));
 
-        Account result = accountService.updateAccount(request);
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("hashed");
+
+        Account result = accountService.updateAccount(uuid, request);
 
         assertEquals(account, result);
 
@@ -222,25 +241,25 @@ class AccountServiceTest {
     @Test
     void updateAccountWithNotFoundUuid() {
         UpdateAccountRequest request = new UpdateAccountRequest(
-                UUID.randomUUID(),
                 "test",
                 "hashed"
         );
+        UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.empty());
 
         assertThrows(AccountNotFoundException.class,
-                () -> accountService.updateAccount(request));
+                () -> accountService.updateAccount(uuid, request));
     }
 
     @Test
     void updateAccountWithInvalidState() {
         UpdateAccountRequest request = new UpdateAccountRequest(
-                UUID.randomUUID(),
                 "test",
                 "hashed"
         );
+        UUID uuid = UUID.randomUUID();
 
         Account notActive = new Account(account.getName(), account.getEmail(), account.getHashedPassword(), account.getAccountRole());
         notActive.changeStatus(AccountStatusAction.DEACTIVATE);
@@ -249,19 +268,23 @@ class AccountServiceTest {
                 .willReturn(Optional.of(notActive));
 
         assertThrows(InvalidAccountStateException.class,
-                () -> accountService.updateAccount(request));
+                () -> accountService.updateAccount(uuid, request));
     }
 
 
 
     @Test
     void withdrawAccount() {
-        WithdrawAccountRequest request = new WithdrawAccountRequest(UUID.randomUUID(), "hashed");
+        WithdrawAccountRequest request = new WithdrawAccountRequest("password");
+        UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.of(account));
 
-        accountService.withdrawAccount(request);
+        given(passwordEncoder.matches(request.password(), account.getHashedPassword()))
+                .willReturn(true);
+
+        accountService.withdrawAccount(uuid, request);
 
         assertNull(account.getName());
         assertNull(account.getEmail());
@@ -270,13 +293,17 @@ class AccountServiceTest {
 
     @Test
     void withdrawAccountWithWrongPassword() {
-        WithdrawAccountRequest request = new WithdrawAccountRequest(UUID.randomUUID(), "wrong-password");
+        WithdrawAccountRequest request = new WithdrawAccountRequest("wrong-password");
+        UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.of(account));
 
+        given(passwordEncoder.matches(request.password(), account.getHashedPassword()))
+                .willReturn(false);
+
         assertThrows(InvalidInputException.class,
-                () -> accountService.withdrawAccount(request));
+                () -> accountService.withdrawAccount(uuid, request));
     }
 
     @Test
@@ -308,6 +335,9 @@ class AccountServiceTest {
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.of(account));
 
+        given(passwordEncoder.matches(request.newPassword(), account.getHashedPassword()))
+                .willReturn(false);
+
         assertTrue(accountService.availablePassword(UUID.randomUUID(), request));
     }
 
@@ -328,6 +358,9 @@ class AccountServiceTest {
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.of(account));
+
+        given(passwordEncoder.matches(request.newPassword(), account.getHashedPassword()))
+                .willReturn(true);
 
         assertThrows(SameAsCurrentPasswordException.class,
                 () -> accountService.availablePassword(UUID.randomUUID(), request));

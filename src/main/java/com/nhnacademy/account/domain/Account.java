@@ -256,7 +256,9 @@ public class Account {
         return this.accountStatus == AccountStatus.LOCKED;
     }
 
-
+    public boolean isAdmin() {
+        return this.accountRole == AccountRole.ADMIN;
+    }
 
     private void validateActive() {
         if (this.accountStatus != AccountStatus.ACTIVE) {

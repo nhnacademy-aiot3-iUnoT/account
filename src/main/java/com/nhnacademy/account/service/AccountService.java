@@ -48,7 +48,9 @@ public class AccountService {
 
     @Transactional
     public Account createAdminAccount(CreateAccountRequest request) {
-        Account account = new Account(request.name(), request.email(), request.password(), AccountRole.ADMIN);
+        String hashedPassword = passwordEncoder.encode(request.password());
+        Account account = new Account(request.name(), request.email(), hashedPassword, AccountRole.ADMIN);
+
         if (accountRepository.existsByEmail(account.getEmail())) {
             throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
@@ -80,18 +82,15 @@ public class AccountService {
     }
 
     @Transactional
-    public Account updateAccount(UpdateAccountRequest request) {
+    public Account updateAccount(UUID uuid, UpdateAccountRequest request) {
 
-        Optional<Account> currentAccount = accountRepository.findByUuid(request.uuid());
+        Optional<Account> currentAccount = accountRepository.findByUuid(uuid);
 
         if (currentAccount.isEmpty()) {
             throw new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
 
         Account updatedAccount = currentAccount.get();
-
-        updatedAccount.changeName(request.name());
-
 
         if (!updatedAccount.isActive()) {
             throw new InvalidAccountStateException(ErrorCode.INVALID_ACCOUNT_STATE);
@@ -112,11 +111,11 @@ public class AccountService {
 
 
     @Transactional
-    public void withdrawAccount(WithdrawAccountRequest request) {
-        Account account = accountRepository.findByUuid(request.uuid())
+    public void withdrawAccount(UUID uuid, WithdrawAccountRequest request) {
+        Account account = accountRepository.findByUuid(uuid)
                 .orElseThrow(() -> new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
 
-        if (!account.getHashedPassword().equals(request.password())) {
+        if (!passwordEncoder.matches(request.password(), account.getHashedPassword())) {
             throw new InvalidInputException(ErrorCode.INVALID_INPUT);
         }
 
@@ -135,10 +134,8 @@ public class AccountService {
 
         Account account = accountOptional.get();
 
-        String requestPasswordHash = passwordEncoder.encode(request.newPassword());
-
         // password is same as current
-        if (account.getHashedPassword().equals(requestPasswordHash)) {
+        if (passwordEncoder.matches(request.newPassword(), account.getHashedPassword())) {
             throw new SameAsCurrentPasswordException(ErrorCode.INVALID_INPUT);
         }
 

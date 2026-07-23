@@ -5,7 +5,6 @@ import com.nhnacademy.account.dto.LoginRequest;
 import com.nhnacademy.account.dto.LoginResponse;
 import com.nhnacademy.account.exception.AccountNotFoundException;
 import com.nhnacademy.account.exception.InvalidAccountStateException;
-import com.nhnacademy.account.exception.InvalidInputException;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.repository.AccountRepository;
 import com.nhnacademy.account.security.JwtProvider;
@@ -26,10 +25,8 @@ public class AuthService {
         Account account = accountRepository.findByEmail(request.email())
                 .orElseThrow(() -> new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
 
-        String hashedPassword = passwordEncoder.encode(request.password());
-
-        if (!passwordEncoder.matches(hashedPassword, account.getHashedPassword())) {
-            throw new InvalidInputException(ErrorCode.INVALID_INPUT);
+        if (!passwordEncoder.matches(request.password(), account.getHashedPassword())) {
+            throw new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
 
         if (account.isWithdrawn() || account.isLocked()) {
