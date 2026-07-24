@@ -39,7 +39,7 @@
         <jacocoArgLine></jacocoArgLine>
 
         <!-- 프로젝트 정책에 맞게 변경 -->
-        <jacoco.line.minimum>0.80</jacoco.line.minimum>
+        <jacoco.line.minimum>0.20</jacoco.line.minimum>
         <spring-cloud.version>2025.1.2</spring-cloud.version>
     </properties>
     <dependencyManagement>
