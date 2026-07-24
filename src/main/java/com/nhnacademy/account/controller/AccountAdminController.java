@@ -97,7 +97,7 @@ public class AccountAdminController {
 
     private void verifyAdmin(UUID requesterUuid) {
         Account requester = accountService.findAccount(requesterUuid);
-        if (!requester.isAdmin()) {
+        if (!(requester.isAdmin() && requester.isActive())) {
             throw new AccessDeniedException();
         }
     }
