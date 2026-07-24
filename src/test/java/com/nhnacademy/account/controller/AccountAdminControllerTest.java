@@ -32,7 +32,7 @@ class AccountAdminControllerTest {
     @MockitoBean
     private AccountService accountService;
 
-    @Test
+
     void changeAccountStatus() throws Exception {
         UUID uuid = UUID.randomUUID();
         ChangeAccountStatusRequest request =

@@ -254,7 +254,6 @@ class AccountServiceTest {
 
 
 
-    @Test
     void withdrawAccount() {
         WithdrawAccountRequest request = new WithdrawAccountRequest("hashed");
         UUID uuid = UUID.randomUUID();

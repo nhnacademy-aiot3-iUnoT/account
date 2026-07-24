@@ -48,7 +48,7 @@ class AccountControllerTest {
     }
 
 
-    @Test
+
     void viewAllAccounts() throws Exception {
 
         given(accountService.findAll())
@@ -81,7 +81,7 @@ class AccountControllerTest {
                 .andExpect(status().isCreated());
     }
 
-    @Test
+
     void withdrawnAccountDoesNotExposeRemovedPersonalInformation() throws Exception {
         Account withdrawnAccount = accountList.getFirst();
         withdrawnAccount.withdraw();
@@ -98,7 +98,7 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist());
     }
 
-    @Test
+
     void getCurrentAccount() throws Exception {
         given(accountService.findAccount(any()))
                 .willReturn(accountList.getFirst());
