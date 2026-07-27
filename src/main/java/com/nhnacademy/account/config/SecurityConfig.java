@@ -48,7 +48,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/auth/**", "/.well-known/jwks.json"
+                                "/api/auth/**", "/api/accounts/email", "/.well-known/jwks.json"
                         ).permitAll()
 
                         .requestMatchers(
