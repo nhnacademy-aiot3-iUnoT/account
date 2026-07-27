@@ -27,6 +27,7 @@ public class JwtProvider {
                     .and()
                 .issuer("account-api")
                 .audience().add("account-api").and()
+                .audience().add("inventory-api").and()
                 .subject(accountUuid.toString())
                 .issuedAt(Date.from(issuedAt))
                 .expiration(Date.from(expiresAt))

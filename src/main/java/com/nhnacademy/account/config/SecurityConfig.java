@@ -1,6 +1,5 @@
 package com.nhnacademy.account.config;
 
-import com.nhnacademy.auth.jwt.AccountJwtAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,8 +24,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtAuthenticationConverter jwtAuthenticationConverter,
-            AccountJwtAuthenticationEntryPoint authenticationEntryPoint
+            JwtAuthenticationConverter jwtAuthenticationConverter
     ) throws Exception {
 
         http
@@ -46,7 +44,6 @@ public class SecurityConfig {
 
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
-                        .authenticationEntryPoint(authenticationEntryPoint)
                 )
 
                 .authorizeHttpRequests(auth -> auth

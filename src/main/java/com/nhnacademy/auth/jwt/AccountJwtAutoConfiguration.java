@@ -57,11 +57,6 @@ public class AccountJwtAutoConfiguration {
         return new AccountUuidArgumentResolver();
     }
 
-    @Bean
-    @ConditionalOnMissingBean
-    AccountJwtAuthenticationEntryPoint accountJwtAuthenticationEntryPoint() {
-        return new AccountJwtAuthenticationEntryPoint();
-    }
 
     private OAuth2TokenValidator<Jwt> jwtValidator(AccountJwtProperties properties) {
         List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>();
@@ -70,7 +65,7 @@ public class AccountJwtAutoConfiguration {
                 ? OAuth2TokenValidatorResult.success()
                 : failure("invalid_token", "JWT kid header is required"));
         validators.add(this::validateUuidSubject);
-        if (!properties.getAudiences().isEmpty()) {
+        if (properties.getAudiences().stream().noneMatch(properties.getIssuer()::equals)) {
             validators.add(jwt -> jwt.getAudience().stream().anyMatch(properties.getAudiences()::contains)
                     ? OAuth2TokenValidatorResult.success()
                     : failure("invalid_token", "JWT audience is not allowed"));
