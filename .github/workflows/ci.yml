@@ -79,4 +79,5 @@ jobs:
           script: |
             set -e
             cd ~/account
+            git pull origin main
             IMAGE_TAG=${{ github.sha }} ./deploy/account-cd.sh
