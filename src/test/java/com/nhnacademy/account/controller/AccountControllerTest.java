@@ -75,7 +75,7 @@ class AccountControllerTest {
 
         authenticate(admin.getUuid());
 
-        mockMvc.perform(get("/api/admin/accounts"))
+        mockMvc.perform(get("/api/accounts/admin"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].uuid").value(accountList.getFirst().getUuid().toString()))
                 .andExpect(jsonPath("$.data[0].name").value("test"))
@@ -115,7 +115,7 @@ class AccountControllerTest {
 
         authenticate(admin.getUuid());
 
-        mockMvc.perform(get("/api/admin/accounts"))
+        mockMvc.perform(get("/api/accounts/admin"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].uuid").value(withdrawnAccount.getUuid().toString()))
                 .andExpect(jsonPath("$.data[0].accountStatus").value("WITHDRAWN"))
@@ -152,7 +152,7 @@ class AccountControllerTest {
 
         authenticate(account.getUuid());
 
-        mockMvc.perform(patch("/api/accounts/me")
+        mockMvc.perform(put("/api/accounts/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

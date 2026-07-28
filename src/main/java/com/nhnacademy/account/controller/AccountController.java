@@ -44,7 +44,7 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
-    @PatchMapping("/me")
+    @PutMapping("/me")
     public ResponseEntity<ApiResponse<AccountResponse>> updateAccount(
             @AccountUUID UUID accountUuid,
             @Valid @RequestBody UpdateAccountRequest request

@@ -26,7 +26,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -64,7 +64,7 @@ class AccountAdminControllerTest {
 
         authenticate(admin.getUuid());
 
-        mockMvc.perform(patch("/api/admin/accounts/{uuid}/status", uuid)
+        mockMvc.perform(put("/api/accounts/admin/{uuid}/status", uuid)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -82,7 +82,7 @@ class AccountAdminControllerTest {
 
         authenticate(admin.getUuid());
 
-        mockMvc.perform(patch("/api/admin/accounts/{uuid}/status", uuid)
+        mockMvc.perform(put("/api/accounts/admin/{uuid}/status", uuid)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -101,7 +101,7 @@ class AccountAdminControllerTest {
                 .willReturn(user);
         authenticate(user.getUuid());
 
-        mockMvc.perform(patch("/api/admin/accounts/{uuid}/status", targetUuid)
+        mockMvc.perform(put("/api/accounts/admin/{uuid}/status", targetUuid)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())

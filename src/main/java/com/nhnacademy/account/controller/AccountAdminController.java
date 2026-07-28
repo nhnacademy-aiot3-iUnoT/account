@@ -21,7 +21,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/admin/accounts")
+@RequestMapping("/api/accounts/admin")
 public class AccountAdminController {
     private final AccountService accountService;
 
@@ -60,7 +60,7 @@ public class AccountAdminController {
     }
 
 
-    @PatchMapping("/{uuid}")
+    @PutMapping("/{uuid}")
     public ResponseEntity<ApiResponse<AccountResponse>> updateAccount(
             @AccountUUID UUID requesterUuid,
             @PathVariable UUID uuid,
@@ -72,7 +72,7 @@ public class AccountAdminController {
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
-    @PatchMapping("/{uuid}/status")
+    @PutMapping("/{uuid}/status")
     public ResponseEntity<ApiResponse<AccountResponse>> changeAccountStatus(
             @AccountUUID UUID requesterUuid,
             @PathVariable UUID uuid,
