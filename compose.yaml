@@ -6,6 +6,7 @@ services:
       SERVER_PORT: 10413
       SPRING_PROFILES_ACTIVE: prod
       EUREKA_DEFAULT_ZONE: ${EUREKA_DEFAULT_ZONE}
+      ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT}
     ports:
       - "127.0.0.1:10413:10413"   # 호스트포트(컨테이너 외부로 노출할 포트):컨테이너포트(실제 서비스 포트)
     restart: unless-stopped       # 컨테이너 죽으면 자동재시작, 수동으로 stop한 경우엔 안 살림
@@ -22,6 +23,7 @@ services:
       SERVER_PORT: 10414
       SPRING_PROFILES_ACTIVE: prod
       EUREKA_DEFAULT_ZONE: ${EUREKA_DEFAULT_ZONE}
+      ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT}
     ports:
       - "127.0.0.1:10414:10414"
     restart: unless-stopped
