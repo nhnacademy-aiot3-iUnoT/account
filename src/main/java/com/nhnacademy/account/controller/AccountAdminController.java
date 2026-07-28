@@ -7,7 +7,8 @@ import com.nhnacademy.account.dto.ChangeAccountStatusRequest;
 import com.nhnacademy.account.dto.crud.CreateAccountRequest;
 import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
 import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
-import com.nhnacademy.account.exception.AccessDeniedException;
+import com.nhnacademy.account.global.error.ErrorCode;
+import com.nhnacademy.account.global.error.exception.ForbiddenException;
 import com.nhnacademy.account.global.util.ApiResponse;
 import com.nhnacademy.account.service.AccountService;
 import jakarta.validation.Valid;
@@ -98,7 +99,7 @@ public class AccountAdminController {
     private void verifyAdmin(UUID requesterUuid) {
         Account requester = accountService.findAccount(requesterUuid);
         if (!(requester.isAdmin() && requester.isActive())) {
-            throw new AccessDeniedException();
+            throw new ForbiddenException(ErrorCode.ACCESS_DENIED);
         }
     }
 }

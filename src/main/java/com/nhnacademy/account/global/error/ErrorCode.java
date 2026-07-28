@@ -64,6 +64,18 @@ public enum ErrorCode {
             "현재 계정 상태에서는 요청한 작업을 수행할 수 없습니다."
     ),
 
+    SAME_AS_CURRENT_PASSWORD(
+            HttpStatus.BAD_REQUEST,
+            "A007",
+            "현재 비밀번호와 동일한 비밀번호는 사용할 수 없습니다."
+    ),
+
+    PASSWORD_MISMATCH(
+            HttpStatus.BAD_REQUEST,
+            "A008",
+            "비밀번호가 일치하지 않습니다."
+    ),
+
     // Authentication
     INVALID_CREDENTIALS(
             HttpStatus.UNAUTHORIZED,
@@ -105,4 +117,3 @@ public enum ErrorCode {
     private final String code;
     private final String message;
 }
-

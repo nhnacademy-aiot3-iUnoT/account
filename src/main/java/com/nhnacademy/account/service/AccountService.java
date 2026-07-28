@@ -8,8 +8,10 @@ import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.crud.CreateAccountRequest;
 import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
 import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
-import com.nhnacademy.account.exception.*;
 import com.nhnacademy.account.global.error.ErrorCode;
+import com.nhnacademy.account.global.error.exception.BadRequestException;
+import com.nhnacademy.account.global.error.exception.ConflictException;
+import com.nhnacademy.account.global.error.exception.NotFoundException;
 import com.nhnacademy.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -34,14 +36,14 @@ public class AccountService {
         Account account = new Account(request.name(), request.email(), hashedPassword);
 
         if (accountRepository.existsByEmail(account.getEmail())) {
-            throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         try {
             return accountRepository.save(account);
         } catch (DataIntegrityViolationException e) {
             // TODO DB 예외
-            throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
     }
@@ -52,20 +54,20 @@ public class AccountService {
         Account account = new Account(request.name(), request.email(), hashedPassword, AccountRole.ADMIN);
 
         if (accountRepository.existsByEmail(account.getEmail())) {
-            throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         try {
             return accountRepository.save(account);
         } catch (DataIntegrityViolationException e) {
             // TODO DB 예외
-            throw new EmailAlreadyExistsException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
     }
 
     public Account findAccount(UUID uuid) {
         return accountRepository.findByUuid(uuid)
-                .orElseThrow(() -> new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
     }
 
     public List<Account> findAll() {
@@ -75,7 +77,7 @@ public class AccountService {
     @Transactional
     public Account changeAccountStatus(UUID uuid, ChangeAccountStatusRequest request) {
         Account account = accountRepository.findByUuid(uuid)
-                .orElseThrow(() -> new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
 
         account.changeStatus(request.action());
         return account;
@@ -87,13 +89,13 @@ public class AccountService {
         Optional<Account> currentAccount = accountRepository.findByUuid(uuid);
 
         if (currentAccount.isEmpty()) {
-            throw new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
+            throw new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
 
         Account updatedAccount = currentAccount.get();
 
         if (!updatedAccount.isActive()) {
-            throw new InvalidAccountStateException(ErrorCode.INVALID_ACCOUNT_STATE);
+            throw new ConflictException(ErrorCode.INVALID_ACCOUNT_STATE);
         }
 
         if (request.name() != null) {
@@ -113,10 +115,10 @@ public class AccountService {
     @Transactional
     public void withdrawAccount(UUID uuid, WithdrawAccountRequest request) {
         Account account = accountRepository.findByUuid(uuid)
-                .orElseThrow(() -> new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.password(), account.getHashedPassword())) {
-            throw new InvalidInputException(ErrorCode.INVALID_INPUT);
+            throw new BadRequestException(ErrorCode.PASSWORD_MISMATCH);
         }
 
         account.withdraw();
@@ -129,14 +131,14 @@ public class AccountService {
     public boolean availablePassword(UUID uuid, PasswordReuseCheckRequest request) {
         Optional<Account> accountOptional = accountRepository.findByUuid(uuid);
         if (accountOptional.isEmpty()) {
-            throw new AccountNotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
+            throw new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
 
         Account account = accountOptional.get();
 
         // password is same as current
         if (passwordEncoder.matches(request.newPassword(), account.getHashedPassword())) {
-            throw new SameAsCurrentPasswordException(ErrorCode.INVALID_INPUT);
+            throw new BadRequestException(ErrorCode.SAME_AS_CURRENT_PASSWORD);
         }
 
         return true;

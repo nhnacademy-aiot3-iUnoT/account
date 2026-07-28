@@ -1,8 +1,8 @@
 package com.nhnacademy.account.domain;
 
-import com.nhnacademy.account.exception.InvalidAccountStateException;
-import com.nhnacademy.account.exception.InvalidInputException;
 import com.nhnacademy.account.global.error.ErrorCode;
+import com.nhnacademy.account.global.error.exception.BadRequestException;
+import com.nhnacademy.account.global.error.exception.ConflictException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -142,7 +142,7 @@ public class Account {
      */
     public void lock() {
         if (this.accountStatus != AccountStatus.ACTIVE) {
-            throw new InvalidAccountStateException(
+            throw new ConflictException(
                     ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
@@ -156,7 +156,7 @@ public class Account {
      */
     public void unlock() {
         if (this.accountStatus != AccountStatus.LOCKED) {
-            throw new InvalidAccountStateException(
+            throw new ConflictException(
                     ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
@@ -170,7 +170,7 @@ public class Account {
      */
     public void deactivate() {
         if (this.accountStatus != AccountStatus.ACTIVE) {
-            throw new InvalidAccountStateException(
+            throw new ConflictException(
                     ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
@@ -184,7 +184,7 @@ public class Account {
      */
     public void activate() {
         if (this.accountStatus != AccountStatus.INACTIVE) {
-            throw new InvalidAccountStateException(
+            throw new ConflictException(
                     ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
@@ -198,7 +198,7 @@ public class Account {
      */
     public void changeStatus(AccountStatusAction action) {
         if (action == null) {
-            throw new InvalidInputException(
+            throw new BadRequestException(
                     ErrorCode.INVALID_INPUT,
                     "상태 변경 작업은 null일 수 없습니다."
             );
@@ -220,7 +220,7 @@ public class Account {
      */
     public void withdraw() {
         if (this.accountStatus == AccountStatus.WITHDRAWN) {
-            throw new InvalidAccountStateException(
+            throw new ConflictException(
                     ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
@@ -262,7 +262,7 @@ public class Account {
 
     private void validateActive() {
         if (this.accountStatus != AccountStatus.ACTIVE) {
-            throw new InvalidAccountStateException(
+            throw new ConflictException(
                     ErrorCode.INVALID_ACCOUNT_STATE
             );
         }
@@ -275,14 +275,14 @@ public class Account {
     ) {
 
         if (value == null) {
-            throw new InvalidInputException(
+            throw new BadRequestException(
                     ErrorCode.INVALID_INPUT,
                     fieldName + "은 null일 수 없습니다."
             );
         }
 
         if (value.isBlank()) {
-            throw new InvalidInputException(
+            throw new BadRequestException(
                     ErrorCode.INVALID_INPUT,
                     fieldName + "은 비어 있을 수 없습니다."
             );

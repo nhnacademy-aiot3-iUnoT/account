@@ -2,48 +2,102 @@ package com.nhnacademy.account.global.error;
 
 import com.nhnacademy.account.global.error.exception.BaseException;
 import com.nhnacademy.account.global.util.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BaseException.class)
-    public ResponseEntity<ApiResponse<?>> handleException(BaseException e) {
+    public ResponseEntity<ApiResponse<?>> handleException(
+            BaseException exception,
+            HttpServletRequest request
+    ) {
+        ErrorCode errorCode = exception.getErrorCode();
+
+        log.warn(
+                "event=business_error exceptionType={} errorCode={} code={} "
+                        + "httpStatus={} method={} path={} message={}",
+                exception.getClass().getSimpleName(),
+                errorCode.name(),
+                errorCode.getCode(),
+                errorCode.getStatus().value(),
+                request.getMethod(),
+                request.getRequestURI(),
+                exception.getMessage()
+        );
+
         return ResponseEntity
-                .status(e.getErrorCode().getStatus())
+                .status(errorCode.getStatus())
                 .body(
-                        new ApiResponse<>(
-                                false,
-                                null,
-                                new ErrorDetail(
-                                        e.getErrorCode().getCode(),
-                                        e.getMessage()
-                                ),
-                                LocalDateTime.now()
+                        ApiResponse.error(
+                                errorCode.getCode(),
+                                exception.getMessage()
                         )
                 );
     }
 
-    @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<ApiResponse<?>> handleUserDetailsException(UsernameNotFoundException e) {
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<?>> handleValidationException(
+            MethodArgumentNotValidException exception,
+            HttpServletRequest request
+    ) {
+        ErrorCode errorCode = ErrorCode.INVALID_INPUT;
+        List<FieldError> fieldErrors = exception.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> new FieldError(
+                        error.getField(),
+                        error.getDefaultMessage()
+                ))
+                .toList();
+
+        log.warn(
+                "event=validation_error exceptionType={} errorCode={} code={} "
+                        + "httpStatus={} method={} path={} fields={}",
+                exception.getClass().getSimpleName(),
+                errorCode.name(),
+                errorCode.getCode(),
+                errorCode.getStatus().value(),
+                request.getMethod(),
+                request.getRequestURI(),
+                fieldErrors.stream().map(FieldError::field).toList()
+        );
+
         return ResponseEntity
-                .status(ErrorCode.ACCOUNT_NOT_FOUND.getStatus())
-                .body(
-                        new ApiResponse<>(
-                                false,
-                                null,
-                                new ErrorDetail(
-                                        ErrorCode.ACCOUNT_NOT_FOUND.getCode(),
-                                        ErrorCode.ACCOUNT_NOT_FOUND.getMessage()
-                                ),
-                                LocalDateTime.now()
-                        )
-                );
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(errorCode.getCode(), errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleUserDetailsException(
+            UsernameNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        ErrorCode errorCode = ErrorCode.ACCOUNT_NOT_FOUND;
+
+        log.warn(
+                "event=business_error exceptionType={} errorCode={} code={} "
+                        + "httpStatus={} method={} path={}",
+                exception.getClass().getSimpleName(),
+                errorCode.name(),
+                errorCode.getCode(),
+                errorCode.getStatus().value(),
+                request.getMethod(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(errorCode));
     }
 
 }

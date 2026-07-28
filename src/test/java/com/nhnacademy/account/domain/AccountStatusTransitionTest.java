@@ -1,6 +1,6 @@
 package com.nhnacademy.account.domain;
 
-import com.nhnacademy.account.exception.InvalidAccountStateException;
+import com.nhnacademy.account.global.error.exception.ConflictException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,13 +53,13 @@ class AccountStatusTransitionTest {
         Account inactiveAccount = account();
         inactiveAccount.deactivate();
 
-        assertThrows(InvalidAccountStateException.class,
+        assertThrows(ConflictException.class,
                 () -> account().changeStatus(AccountStatusAction.UNLOCK));
-        assertThrows(InvalidAccountStateException.class,
+        assertThrows(ConflictException.class,
                 () -> account().changeStatus(AccountStatusAction.REACTIVATE));
-        assertThrows(InvalidAccountStateException.class,
+        assertThrows(ConflictException.class,
                 () -> lockedAccount.changeStatus(AccountStatusAction.DEACTIVATE));
-        assertThrows(InvalidAccountStateException.class,
+        assertThrows(ConflictException.class,
                 () -> inactiveAccount.changeStatus(AccountStatusAction.LOCK));
     }
 
@@ -69,7 +69,7 @@ class AccountStatusTransitionTest {
             Account account = account();
             account.withdraw();
 
-            assertThrows(InvalidAccountStateException.class,
+            assertThrows(ConflictException.class,
                     () -> account.changeStatus(action));
             assertEquals(AccountStatus.WITHDRAWN, account.getAccountStatus());
         }

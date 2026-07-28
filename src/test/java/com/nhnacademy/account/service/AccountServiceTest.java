@@ -9,7 +9,10 @@ import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.crud.CreateAccountRequest;
 import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
 import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
-import com.nhnacademy.account.exception.*;
+import com.nhnacademy.account.global.error.ErrorCode;
+import com.nhnacademy.account.global.error.exception.BadRequestException;
+import com.nhnacademy.account.global.error.exception.ConflictException;
+import com.nhnacademy.account.global.error.exception.NotFoundException;
 import com.nhnacademy.account.repository.AccountRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,9 +102,12 @@ class AccountServiceTest {
         given(passwordEncoder.encode(request.password()))
                 .willReturn("hashed");
 
-        assertThrows(EmailAlreadyExistsException.class,
-                () -> accountService.createAccount(request));
+        ConflictException exception = assertThrows(
+                ConflictException.class,
+                () -> accountService.createAccount(request)
+        );
 
+        assertEquals(ErrorCode.EMAIL_ALREADY_EXISTS, exception.getErrorCode());
 
     }
 
@@ -150,7 +156,7 @@ class AccountServiceTest {
         given(passwordEncoder.encode(request.password()))
                 .willReturn("hashed");
 
-        assertThrows(EmailAlreadyExistsException.class,
+        assertThrows(ConflictException.class,
                 () -> accountService.createAdminAccount(request));
 
 
@@ -181,7 +187,7 @@ class AccountServiceTest {
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.empty());
 
-        assertThrows(AccountNotFoundException.class,
+        assertThrows(NotFoundException.class,
                 () -> accountService.changeAccountStatus(uuid, request));
     }
 
@@ -249,7 +255,7 @@ class AccountServiceTest {
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.empty());
 
-        assertThrows(AccountNotFoundException.class,
+        assertThrows(NotFoundException.class,
                 () -> accountService.updateAccount(uuid, request));
     }
 
@@ -267,7 +273,7 @@ class AccountServiceTest {
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.of(notActive));
 
-        assertThrows(InvalidAccountStateException.class,
+        assertThrows(ConflictException.class,
                 () -> accountService.updateAccount(uuid, request));
     }
 
@@ -302,8 +308,12 @@ class AccountServiceTest {
         given(passwordEncoder.matches(request.password(), account.getHashedPassword()))
                 .willReturn(false);
 
-        assertThrows(InvalidInputException.class,
-                () -> accountService.withdrawAccount(uuid, request));
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> accountService.withdrawAccount(uuid, request)
+        );
+
+        assertEquals(ErrorCode.PASSWORD_MISMATCH, exception.getErrorCode());
     }
 
     @Test
@@ -348,7 +358,7 @@ class AccountServiceTest {
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.empty());
 
-        assertThrows(AccountNotFoundException.class,
+        assertThrows(NotFoundException.class,
                 () -> accountService.availablePassword(UUID.randomUUID(), request));
     }
 
@@ -362,8 +372,12 @@ class AccountServiceTest {
         given(passwordEncoder.matches(request.newPassword(), account.getHashedPassword()))
                 .willReturn(true);
 
-        assertThrows(SameAsCurrentPasswordException.class,
-                () -> accountService.availablePassword(UUID.randomUUID(), request));
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> accountService.availablePassword(UUID.randomUUID(), request)
+        );
+
+        assertEquals(ErrorCode.SAME_AS_CURRENT_PASSWORD, exception.getErrorCode());
     }
 
 }

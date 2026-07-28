@@ -1,7 +1,6 @@
 package com.nhnacademy.account.domain;
 
-import com.nhnacademy.account.exception.InvalidAccountStateException;
-import com.nhnacademy.account.exception.InvalidInputException;
+import com.nhnacademy.account.global.error.exception.BadRequestException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -38,13 +37,13 @@ class AccountTest {
     @Test
     @DisplayName("이름의 null, 빈 문자열, 공백 문자열을 각각 거부한다.")
     void testNameValidation() {
-        assertThrows(InvalidInputException.class,
+        assertThrows(BadRequestException.class,
                 () -> new Account(null, "test@test.com", "hashed"));
 
-        assertThrows(InvalidInputException.class,
+        assertThrows(BadRequestException.class,
                 () -> new Account("", "test@test.com", "hashed"));
 
-        assertThrows(InvalidInputException.class,
+        assertThrows(BadRequestException.class,
                 () -> new Account(" ", "test@test.com", "hashed"));
     }
 
