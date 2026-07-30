@@ -1,4 +1,4 @@
-package com.nhnacademy.account.dto;
+package com.nhnacademy.account.dto.request;
 
 import com.nhnacademy.account.domain.AccountStatusAction;
 import jakarta.validation.constraints.NotBlank;

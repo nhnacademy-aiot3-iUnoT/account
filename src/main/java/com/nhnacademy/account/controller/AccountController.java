@@ -2,14 +2,14 @@ package com.nhnacademy.account.controller;
 
 import com.nhnacademy.account.security.AccountUUID;
 import com.nhnacademy.account.domain.Account;
-import com.nhnacademy.account.dto.AccountResponse;
-import com.nhnacademy.account.dto.EmailAvailabilityRequest;
-import com.nhnacademy.account.dto.EmailAvailabilityResponse;
-import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
-import com.nhnacademy.account.dto.PasswordReuseCheckResponse;
-import com.nhnacademy.account.dto.crud.CreateAccountRequest;
-import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
-import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.request.CreateAccountRequest;
+import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
+import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountRequest;
+import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.response.AccountResponse;
+import com.nhnacademy.account.dto.response.EmailAvailabilityResponse;
+import com.nhnacademy.account.dto.response.PasswordReuseCheckResponse;
 import com.nhnacademy.account.service.AccountService;
 import com.nhnacademy.account.global.util.ApiResponse;
 import jakarta.validation.Valid;
@@ -70,7 +70,7 @@ public class AccountController {
         boolean available = accountService.availableEmail(request);
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        EmailAvailabilityResponse.from(available)
+                        new EmailAvailabilityResponse(available)
                 )
         );
     }
@@ -83,7 +83,7 @@ public class AccountController {
         boolean available = accountService.availablePassword(accountUuid, request);
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        PasswordReuseCheckResponse.from(available)
+                        new PasswordReuseCheckResponse(available)
                 )
         );
     }

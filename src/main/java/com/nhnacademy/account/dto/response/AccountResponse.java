@@ -1,4 +1,4 @@
-package com.nhnacademy.account.dto;
+package com.nhnacademy.account.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nhnacademy.account.domain.Account;

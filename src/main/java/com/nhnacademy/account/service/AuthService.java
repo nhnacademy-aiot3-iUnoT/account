@@ -1,8 +1,8 @@
 package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
-import com.nhnacademy.account.dto.LoginRequest;
-import com.nhnacademy.account.dto.LoginResponse;
+import com.nhnacademy.account.dto.request.LoginRequest;
+import com.nhnacademy.account.dto.response.LoginResponse;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.ForbiddenException;
 import com.nhnacademy.account.global.error.exception.UnauthorizedException;

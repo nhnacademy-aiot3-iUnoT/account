@@ -3,7 +3,7 @@ package com.nhnacademy.account.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
-import com.nhnacademy.account.dto.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
 import com.nhnacademy.account.domain.AccountStatusAction;
 import com.nhnacademy.account.service.AccountService;
 import org.junit.jupiter.api.AfterEach;
