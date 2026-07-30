@@ -48,8 +48,7 @@ public class AccountController {
     @PutMapping("/me")
     public ResponseEntity<ApiResponse<AccountResponse>> updateAccount(
             @AccountUUID UUID accountUuid,
-            @Valid @RequestBody UpdateAccountRequest request,
-            @RequestHeader("X-USER-ID") String uuidStr
+            @Valid @RequestBody UpdateAccountRequest request
     ) {
         Account account = accountService.updateAccount(accountUuid, request);
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
@@ -58,8 +57,7 @@ public class AccountController {
     @DeleteMapping("/me")
     public ResponseEntity<ApiResponse<Void>> withdrawAccount(
             @AccountUUID UUID accountUuid,
-            @Valid @RequestBody WithdrawAccountRequest request,
-            @RequestHeader("X-USER-ID") String uuidStr
+            @Valid @RequestBody WithdrawAccountRequest request
     ) {
         accountService.withdrawAccount(accountUuid, request);
         return ResponseEntity.ok(ApiResponse.ok());
@@ -80,8 +78,7 @@ public class AccountController {
     @PostMapping("/pwd")
     public ResponseEntity<ApiResponse<PasswordReuseCheckResponse>> checkPassword(
             @AccountUUID UUID accountUuid,
-            @Valid @RequestBody PasswordReuseCheckRequest request,
-            @RequestHeader("X-USER-ID") String uuidStr
+            @Valid @RequestBody PasswordReuseCheckRequest request
     ) {
         boolean available = accountService.availablePassword(accountUuid, request);
         return ResponseEntity.ok(

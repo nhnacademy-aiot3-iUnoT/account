@@ -28,6 +28,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -149,7 +150,6 @@ class AccountControllerTest {
         authenticate(account.getUuid());
 
         mockMvc.perform(put("/api/accounts/me")
-                        .header("X-USER-ID", accountList.getFirst().getUuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -168,7 +168,6 @@ class AccountControllerTest {
         authenticate(account.getUuid());
 
         mockMvc.perform(delete("/api/accounts/me")
-                        .header("X-USER-ID", accountList.getFirst().getUuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
@@ -193,10 +192,8 @@ class AccountControllerTest {
         PasswordReuseCheckRequest request = new PasswordReuseCheckRequest("new-password");
         UUID accountUuid = UUID.randomUUID();
 
-        given(accountService.availablePassword(
-                any(UUID.class),
-                any(PasswordReuseCheckRequest.class)
-        )).willReturn(true);
+        given(accountService.availablePassword(accountUuid, request))
+                .willReturn(true);
 
         authenticate(accountUuid);
 
@@ -206,6 +203,8 @@ class AccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.available").value(true))
                 .andExpect(jsonPath("$.data.sameAsCurrent").doesNotExist());
+
+        then(accountService).should().availablePassword(accountUuid, request);
     }
 
     private void authenticate(UUID accountUuid) {
