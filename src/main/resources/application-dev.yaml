@@ -2,6 +2,12 @@ eureka:
   client:
     enabled: false
 
+management:
+  tracing:
+    export:
+      zipkin:
+        enabled: false
+
 security:
   jwt:
     issuer: account-api
