@@ -71,6 +71,10 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/actuator/health", "/actuator/health/**"
+                        ).permitAll()
+
+                        .requestMatchers(
                                 "/api/auth/**", "/api/accounts/email", "/.well-known/jwks.json"
                         ).permitAll()
 
