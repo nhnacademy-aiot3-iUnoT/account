@@ -1,7 +1,7 @@
 package com.nhnacademy.account.controller;
 
-import com.nhnacademy.account.dto.LoginRequest;
-import com.nhnacademy.account.dto.LoginResponse;
+import com.nhnacademy.account.dto.request.LoginRequest;
+import com.nhnacademy.account.dto.response.LoginResponse;
 import com.nhnacademy.account.global.util.ApiResponse;
 import com.nhnacademy.account.service.AuthService;
 import jakarta.validation.Valid;

@@ -2,11 +2,11 @@ package com.nhnacademy.account.controller;
 
 import com.nhnacademy.account.security.AccountUUID;
 import com.nhnacademy.account.domain.Account;
-import com.nhnacademy.account.dto.AccountResponse;
-import com.nhnacademy.account.dto.ChangeAccountStatusRequest;
-import com.nhnacademy.account.dto.crud.CreateAccountRequest;
-import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
-import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.CreateAccountRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountRequest;
+import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.response.AccountResponse;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.ForbiddenException;
 import com.nhnacademy.account.global.util.ApiResponse;

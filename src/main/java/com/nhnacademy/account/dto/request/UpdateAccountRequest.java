@@ -1,4 +1,4 @@
-package com.nhnacademy.account.dto.crud;
+package com.nhnacademy.account.dto.request;
 
 import jakarta.validation.constraints.Size;
 
