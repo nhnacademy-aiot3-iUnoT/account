@@ -1,0 +1,16 @@
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${server.port}
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE}
+
+logging:
+  level:
+    com.nhnacademy.account: INFO
+
+management:
+  tracing:
+    export:
+      zipkin:
+        endpoint: ${ZIPKIN_ENDPOINT}

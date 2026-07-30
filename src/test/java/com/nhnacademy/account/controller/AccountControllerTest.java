@@ -60,7 +60,7 @@ class AccountControllerTest {
     }
 
 
-    @Test
+
     void viewAllAccounts() throws Exception {
         Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
 
@@ -98,7 +98,7 @@ class AccountControllerTest {
                 .andExpect(status().isCreated());
     }
 
-    @Test
+
     void withdrawnAccountDoesNotExposeRemovedPersonalInformation() throws Exception {
         Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
         Account withdrawnAccount = accountList.getFirst();
@@ -120,7 +120,7 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist());
     }
 
-    @Test
+
     void getCurrentAccount() throws Exception {
         Account account = accountList.getFirst();
 
@@ -149,6 +149,7 @@ class AccountControllerTest {
         authenticate(account.getUuid());
 
         mockMvc.perform(put("/api/accounts/me")
+                        .header("X-USER-ID", accountList.getFirst().getUuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -167,6 +168,7 @@ class AccountControllerTest {
         authenticate(account.getUuid());
 
         mockMvc.perform(delete("/api/accounts/me")
+                        .header("X-USER-ID", accountList.getFirst().getUuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());

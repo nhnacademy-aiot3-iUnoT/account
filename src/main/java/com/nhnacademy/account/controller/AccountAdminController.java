@@ -51,7 +51,8 @@ public class AccountAdminController {
     @PostMapping
     public ResponseEntity<ApiResponse<AccountResponse>> createAccount(
             @AccountUUID UUID requesterUuid,
-            @Valid @RequestBody CreateAccountRequest createAccountRequest
+            @Valid @RequestBody CreateAccountRequest createAccountRequest,
+            @RequestHeader("X-USER-ID") String uuidStr
     ) {
         verifyAdmin(requesterUuid);
 
@@ -76,7 +77,8 @@ public class AccountAdminController {
     public ResponseEntity<ApiResponse<AccountResponse>> changeAccountStatus(
             @AccountUUID UUID requesterUuid,
             @PathVariable UUID uuid,
-            @Valid @RequestBody ChangeAccountStatusRequest request
+            @Valid @RequestBody ChangeAccountStatusRequest request,
+            @RequestHeader("X-USER-ID") String uuidStr
     ) {
         verifyAdmin(requesterUuid);
 

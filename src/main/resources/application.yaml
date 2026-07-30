@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: account
+  jpa:
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, service-registry
+  endpoint:
+    health:
+      show-details: never
+
+server:
+  port: ${SERVER_PORT:10413}

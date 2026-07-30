@@ -1,0 +1,83 @@
+name: Account CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true # 같은 브랜치에 새 푸시가 오면 진행 중인 실행 취소
+
+jobs:
+  build-test:
+    name: 빌드 및 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - name: 체크아웃 # Repository 코드를 러너로 클론
+        uses: actions/checkout@v7
+
+      - name: JDK 21 설정
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven # ~/.m2 의존성 캐싱 -> 2회차부터 빌드 빨라짐
+
+      - name: 빌드 및 테스트
+        run: ./mvnw -B clean verify # clean -> compile -> test -> verify
+
+      - name: 테스트 리포트 업로드
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  build-push:
+    name: 이미지 빌드 및 GHCR Push
+    needs: build-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v7
+
+      - name: GHCR 로그인
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 이미지 빌드 및 푸시 (latest + 커밋SHA)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/nhnacademy-aiot3-iunot/account:latest
+            ghcr.io/nhnacademy-aiot3-iunot/account:${{ github.sha }}
+
+  deploy:
+    name: 배포
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: 배포
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            cd ~/account
+            git pull origin main
+            IMAGE_TAG=${{ github.sha }} ./deploy/account-cd.sh
