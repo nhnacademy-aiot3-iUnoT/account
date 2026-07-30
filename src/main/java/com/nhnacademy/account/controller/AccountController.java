@@ -63,7 +63,7 @@ public class AccountController {
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
-    @PostMapping("/email")
+    @PostMapping("/check-email")
     public ResponseEntity<ApiResponse<EmailAvailabilityResponse>> checkEmail(
             @Valid @RequestBody EmailAvailabilityRequest request
     ) {
@@ -75,7 +75,7 @@ public class AccountController {
         );
     }
 
-    @PostMapping("/pwd")
+    @PostMapping("/check-pwd")
     public ResponseEntity<ApiResponse<PasswordReuseCheckResponse>> checkPassword(
             @AccountUUID UUID accountUuid,
             @Valid @RequestBody PasswordReuseCheckRequest request
