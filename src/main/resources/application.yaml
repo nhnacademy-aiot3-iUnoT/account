@@ -24,3 +24,4 @@ security:
       - account-api
     allowed-algorithms:
       - rs256
+    private-key-path: ${JWT_PRIVATE_KEY_PATH:./keys/jwt-private.pem}

@@ -180,7 +180,7 @@ class AccountControllerTest {
         given(accountService.availableEmail(any(EmailAvailabilityRequest.class)))
                 .willReturn(true);
 
-        mockMvc.perform(post("/api/accounts/email")
+        mockMvc.perform(post("/api/accounts/check-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -197,7 +197,7 @@ class AccountControllerTest {
 
         authenticate(accountUuid);
 
-        mockMvc.perform(post("/api/accounts/pwd")
+        mockMvc.perform(post("/api/accounts/check-pwd")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
