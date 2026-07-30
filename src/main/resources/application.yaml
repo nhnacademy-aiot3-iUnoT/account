@@ -12,6 +12,10 @@ management:
   endpoint:
     health:
       show-details: never
+  tracing:
+    export:
+      zipkin:
+        enabled: false
 
 server:
   port: ${SERVER_PORT:10413}
