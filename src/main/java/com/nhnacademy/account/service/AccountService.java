@@ -125,7 +125,7 @@ public class AccountService {
     }
 
     public boolean availableEmail(EmailAvailabilityRequest request) {
-        return accountRepository.existsByEmail(request.email());
+        return !accountRepository.existsByEmail(request.email());
     }
 
     public boolean availablePassword(UUID uuid, PasswordReuseCheckRequest request) {

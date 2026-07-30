@@ -1,2 +1,0 @@
-com.nhnacademy.auth.jwt.AccountJwtAutoConfiguration
-com.nhnacademy.auth.jwt.AccountJwtWebMvcConfiguration

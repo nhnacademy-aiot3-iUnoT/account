@@ -665,15 +665,11 @@ inventory-api
 
 ---
 
-## 13. 인증 Starter의 책임
+## 13. 각 API의 JWT 인증 책임
 
-각 API 서버가 반복적인 인증 코드를 작성하지 않고 JWT를 검증할 수 있도록 Spring Boot Starter 형태로 제공할 수 있습니다.
-
-```text
-account-security-spring-boot-starter
-```
-
-Starter는 다음 기능을 자동 설정합니다.
+공용 인증 Starter를 사용하지 않고 각 API가 자신의 코드에 JWT 검증 구성을 직접 둡니다.
+Account API는 `com.nhnacademy.account.config`와
+`com.nhnacademy.account.security` 패키지에서 다음 기능을 구성합니다.
 
 ```text
 - JwtDecoder
@@ -689,28 +685,25 @@ Starter는 다음 기능을 자동 설정합니다.
 - 401 및 403 응답 처리
 ```
 
-각 API 서버는 애플리케이션 이름과 인증 관련 설정을 제공합니다.
+Inventory API 등 다른 API도 같은 검증 원칙을 해당 API 내부 코드로 구현하되,
+자신에게 해당하는 audience를 설정합니다. 한 API의 Spring Bean이나 내부 패키지를
+다른 API가 런타임 라이브러리로 참조하지 않습니다.
 
 ```yaml
-spring:
-  application:
-    name: inventory-api
-
 security:
   jwt:
     issuer: https://auth.example.com
-    audience: inventory-api
+    audiences:
+      - inventory-api
 ```
 
 기대 Audience는 명시적인 보안 설정으로 관리하는 것을 기본으로 합니다.
 
 ```text
-security.jwt.audience = inventory-api
+security.jwt.audiences = inventory-api
   ↓
 기대 Audience = inventory-api
 ```
-
-필요하다면 `spring.application.name`을 기본값으로 사용할 수 있지만, 애플리케이션 이름과 인증 정책이 불필요하게 결합되지 않도록 명시적 설정을 우선합니다.
 
 동일한 서비스의 여러 인스턴스는 같은 Audience를 사용하므로 이중화에도 문제가 없습니다.
 

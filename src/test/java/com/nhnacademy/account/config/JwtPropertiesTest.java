@@ -1,6 +1,6 @@
-package com.nhnacademy.account.global.error;
+package com.nhnacademy.account.config;
 
-class ErrorCodeTest {
+class JwtPropertiesTest {
 
     // 이 클래스의 책임은 무엇인가?
     // 반드시 지켜야 하는 조건은 무엇인가?

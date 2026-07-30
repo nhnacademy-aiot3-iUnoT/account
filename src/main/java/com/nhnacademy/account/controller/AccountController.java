@@ -1,11 +1,12 @@
 package com.nhnacademy.account.controller;
 
-import com.nhnacademy.auth.jwt.AccountUUID;
+import com.nhnacademy.account.security.AccountUUID;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.dto.AccountResponse;
 import com.nhnacademy.account.dto.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.EmailAvailabilityResponse;
 import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
+import com.nhnacademy.account.dto.PasswordReuseCheckResponse;
 import com.nhnacademy.account.dto.crud.CreateAccountRequest;
 import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
 import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
@@ -75,14 +76,14 @@ public class AccountController {
     }
 
     @PostMapping("/pwd")
-    public ResponseEntity<ApiResponse<EmailAvailabilityResponse>> checkPassword(
+    public ResponseEntity<ApiResponse<PasswordReuseCheckResponse>> checkPassword(
             @AccountUUID UUID accountUuid,
             @Valid @RequestBody PasswordReuseCheckRequest request
     ) {
         boolean available = accountService.availablePassword(accountUuid, request);
         return ResponseEntity.ok(
                 ApiResponse.success(
-                        EmailAvailabilityResponse.from(available)
+                        PasswordReuseCheckResponse.from(available)
                 )
         );
     }

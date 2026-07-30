@@ -321,7 +321,7 @@ class AccountServiceTest {
         EmailAvailabilityRequest request = new EmailAvailabilityRequest("test@test.com");
 
         given(accountRepository.existsByEmail(any(String.class)))
-                .willReturn(true);
+                .willReturn(false);
 
         assertTrue(accountService.availableEmail(request));
 
@@ -332,7 +332,7 @@ class AccountServiceTest {
         EmailAvailabilityRequest request = new EmailAvailabilityRequest("test@test.com");
 
         given(accountRepository.existsByEmail(any(String.class)))
-                .willReturn(false);
+                .willReturn(true);
 
         assertFalse(accountService.availableEmail(request));
 

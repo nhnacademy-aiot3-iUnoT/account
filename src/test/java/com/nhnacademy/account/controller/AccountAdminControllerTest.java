@@ -1,8 +1,6 @@
 package com.nhnacademy.account.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nhnacademy.auth.jwt.AccountJwtWebMvcConfiguration;
-import com.nhnacademy.auth.jwt.AccountUuidArgumentResolver;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
 import com.nhnacademy.account.dto.ChangeAccountStatusRequest;
@@ -12,13 +10,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
@@ -31,8 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AccountAdminController.class)
-@Import({AccountUuidArgumentResolver.class, AccountJwtWebMvcConfiguration.class})
-@TestPropertySource(properties = "nhn.auth.jwt.enabled=true")
 class AccountAdminControllerTest {
 
     @Autowired

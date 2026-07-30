@@ -1,11 +1,10 @@
 package com.nhnacademy.account.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nhnacademy.auth.jwt.AccountJwtWebMvcConfiguration;
-import com.nhnacademy.auth.jwt.AccountUuidArgumentResolver;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
-import com.nhnacademy.account.dto.AccountResponse;
+import com.nhnacademy.account.dto.EmailAvailabilityRequest;
+import com.nhnacademy.account.dto.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.crud.CreateAccountRequest;
 import com.nhnacademy.account.dto.crud.UpdateAccountRequest;
 import com.nhnacademy.account.dto.crud.WithdrawAccountRequest;
@@ -22,7 +21,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -36,8 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @Slf4j
 @WebMvcTest({AccountController.class, AccountAdminController.class})
-@Import({AccountUuidArgumentResolver.class, AccountJwtWebMvcConfiguration.class})
-@TestPropertySource(properties = "nhn.auth.jwt.enabled=true")
 class AccountControllerTest {
 
     @Autowired
@@ -174,6 +170,40 @@ class AccountControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void checkEmailAvailability() throws Exception {
+        EmailAvailabilityRequest request = new EmailAvailabilityRequest("available@test.com");
+
+        given(accountService.availableEmail(any(EmailAvailabilityRequest.class)))
+                .willReturn(true);
+
+        mockMvc.perform(post("/api/accounts/email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.available").value(true));
+    }
+
+    @Test
+    void checkPasswordAvailability() throws Exception {
+        PasswordReuseCheckRequest request = new PasswordReuseCheckRequest("new-password");
+        UUID accountUuid = UUID.randomUUID();
+
+        given(accountService.availablePassword(
+                any(UUID.class),
+                any(PasswordReuseCheckRequest.class)
+        )).willReturn(true);
+
+        authenticate(accountUuid);
+
+        mockMvc.perform(post("/api/accounts/pwd")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.available").value(true))
+                .andExpect(jsonPath("$.data.sameAsCurrent").doesNotExist());
     }
 
     private void authenticate(UUID accountUuid) {

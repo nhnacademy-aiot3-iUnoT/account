@@ -1,6 +1,6 @@
 package com.nhnacademy.account.controller;
 
-import com.nhnacademy.auth.jwt.AccountUUID;
+import com.nhnacademy.account.security.AccountUUID;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.dto.AccountResponse;
 import com.nhnacademy.account.dto.ChangeAccountStatusRequest;
