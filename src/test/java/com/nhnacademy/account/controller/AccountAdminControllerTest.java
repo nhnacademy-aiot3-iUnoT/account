@@ -59,6 +59,7 @@ class AccountAdminControllerTest {
         authenticate(admin.getUuid());
 
         mockMvc.perform(put("/api/accounts/admin/{uuid}/status", uuid)
+                        .header("X-USER-ID", admin.getUuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -77,6 +78,7 @@ class AccountAdminControllerTest {
         authenticate(admin.getUuid());
 
         mockMvc.perform(put("/api/accounts/admin/{uuid}/status", uuid)
+                        .header("X-USER-ID", admin.getUuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -96,6 +98,7 @@ class AccountAdminControllerTest {
         authenticate(user.getUuid());
 
         mockMvc.perform(put("/api/accounts/admin/{uuid}/status", targetUuid)
+                        .header("X-USER-ID", user.getUuid())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
