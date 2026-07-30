@@ -5,6 +5,7 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 
+import java.io.File;
 import java.net.URI;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -12,6 +13,9 @@ import java.util.Set;
 @Getter
 @ConfigurationProperties("security.jwt")
 public class JwtProperties {
+    @Setter
+    private File privateKeyPath;
+
     @Setter
     private URI jwkSetUri;
 
