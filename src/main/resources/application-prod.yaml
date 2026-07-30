@@ -14,3 +14,12 @@ management:
     export:
       zipkin:
         endpoint: ${ZIPKIN_ENDPOINT}
+
+security:
+  jwt:
+    issuer: account-api
+    jwk-set-uri: http://localhost:${server.port:8080}/.well-known/jwks.json
+    audiences:
+      - account-api
+    allowed-algorithms:
+      - rs256
