@@ -7,6 +7,7 @@ import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
@@ -154,6 +155,27 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data.uuid").value(accountList.getFirst().getUuid().toString()))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
                 .andExpect(jsonPath("$.data.hashedPassword").doesNotExist());
+    }
+
+    @Test
+    void updateAccountPassword() throws Exception {
+        UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
+        Account account = accountList.getFirst();
+
+        given(accountService.updateAccountPassword(account.getUuid(), request))
+                .willReturn(account);
+
+        authenticate(account.getUuid());
+
+        mockMvc.perform(put("/api/accounts/me/pwd")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.uuid").value(account.getUuid().toString()))
+                .andExpect(jsonPath("$.data.id").doesNotExist())
+                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist());
+
+        then(accountService).should().updateAccountPassword(account.getUuid(), request);
     }
 
     @Test

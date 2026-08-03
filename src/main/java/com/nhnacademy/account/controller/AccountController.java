@@ -6,6 +6,7 @@ import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.dto.response.AccountResponse;
 import com.nhnacademy.account.dto.response.EmailAvailabilityResponse;
@@ -51,6 +52,15 @@ public class AccountController {
             @Valid @RequestBody UpdateAccountNameRequest request
     ) {
         Account account = accountService.updateAccountName(accountUuid, request);
+        return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
+    }
+
+    @PutMapping("/me/pwd")
+    public ResponseEntity<ApiResponse<AccountResponse>> updateAccountPassword(
+            @AccountUUID UUID accountUuid,
+            @Valid @RequestBody UpdateAccountPasswordRequest request
+    ) {
+        Account account = accountService.updateAccountPassword(accountUuid, request);
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 

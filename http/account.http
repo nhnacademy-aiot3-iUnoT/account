@@ -76,6 +76,16 @@ Content-Type: application/json
   "name": "updated-test"
 }
 
+### 내 계정 비밀번호 수정
+# 실행 후 로그인 비밀번호가 newPassword로 변경됩니다.
+PUT {{baseUrl}}/api/accounts/me/pwd
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "password": "{{newPassword}}"
+}
+
 ### 로그아웃
 POST {{baseUrl}}/api/auth/logout
 Authorization: Bearer {{accessToken}}
