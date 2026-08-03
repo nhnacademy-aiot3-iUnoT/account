@@ -6,7 +6,8 @@ import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.dto.response.AccountResponse;
 import com.nhnacademy.account.global.error.ErrorCode;
@@ -222,22 +223,17 @@ class AccountServiceTest {
     }
 
     @Test
-    void updateAccount() {
-        UpdateAccountRequest request = new UpdateAccountRequest(
-                "test",
-                "hashed"
-        );
+    void updateAccountName() {
+        UpdateAccountNameRequest request = new UpdateAccountNameRequest("updated");
         UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(any(UUID.class)))
             .willReturn(Optional.of(account));
 
-        given(passwordEncoder.encode(request.password()))
-                .willReturn("hashed");
-
-        Account result = accountService.updateAccount(uuid, request);
+        Account result = accountService.updateAccountName(uuid, request);
 
         assertEquals(account, result);
+        assertEquals("updated", result.getName());
 
         then(accountRepository)
                 .should(only())
@@ -245,26 +241,20 @@ class AccountServiceTest {
     }
 
     @Test
-    void updateAccountWithNotFoundUuid() {
-        UpdateAccountRequest request = new UpdateAccountRequest(
-                "test",
-                "hashed"
-        );
+    void updateAccountNameWithNotFoundUuid() {
+        UpdateAccountNameRequest request = new UpdateAccountNameRequest("test");
         UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> accountService.updateAccount(uuid, request));
+                () -> accountService.updateAccountName(uuid, request));
     }
 
     @Test
-    void updateAccountWithInvalidState() {
-        UpdateAccountRequest request = new UpdateAccountRequest(
-                "test",
-                "hashed"
-        );
+    void updateAccountNameWithInvalidState() {
+        UpdateAccountNameRequest request = new UpdateAccountNameRequest("test");
         UUID uuid = UUID.randomUUID();
 
         Account notActive = new Account(account.getName(), account.getEmail(), account.getHashedPassword(), account.getAccountRole());
@@ -274,7 +264,25 @@ class AccountServiceTest {
                 .willReturn(Optional.of(notActive));
 
         assertThrows(ConflictException.class,
-                () -> accountService.updateAccount(uuid, request));
+                () -> accountService.updateAccountName(uuid, request));
+    }
+
+    @Test
+    void updateAccountPassword() {
+        UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
+        UUID uuid = UUID.randomUUID();
+
+        given(accountRepository.findByUuid(uuid))
+                .willReturn(Optional.of(account));
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("new-hashed-password");
+
+        Account result = accountService.updateAccountPassword(uuid, request);
+
+        assertEquals(account, result);
+        assertEquals("new-hashed-password", result.getHashedPassword());
+        then(accountRepository).should().findByUuid(uuid);
+        then(passwordEncoder).should().encode(request.password());
     }
 
 

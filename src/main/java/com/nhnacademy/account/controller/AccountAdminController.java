@@ -4,7 +4,8 @@ import com.nhnacademy.account.security.AccountUUID;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.dto.response.AccountResponse;
 import com.nhnacademy.account.global.error.ErrorCode;
@@ -61,14 +62,26 @@ public class AccountAdminController {
 
 
     @PutMapping("/{uuid}")
-    public ResponseEntity<ApiResponse<AccountResponse>> updateAccount(
+    public ResponseEntity<ApiResponse<AccountResponse>> updateAccountName(
             @AccountUUID UUID requesterUuid,
             @PathVariable UUID uuid,
-            @Valid @RequestBody UpdateAccountRequest request
+            @Valid @RequestBody UpdateAccountNameRequest request
     ) {
         verifyAdmin(requesterUuid);
 
-        Account account = accountService.updateAccount(uuid, request);
+        Account account = accountService.updateAccountName(uuid, request);
+        return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
+    }
+
+    @PutMapping("/{uuid}/pwd")
+    public ResponseEntity<ApiResponse<AccountResponse>> updateAccountPassword(
+            @AccountUUID UUID requesterUuid,
+            @PathVariable UUID uuid,
+            @Valid @RequestBody UpdateAccountPasswordRequest request
+    ) {
+        verifyAdmin(requesterUuid);
+
+        Account account = accountService.updateAccountPassword(uuid, request);
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 

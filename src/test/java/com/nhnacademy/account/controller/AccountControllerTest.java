@@ -6,7 +6,7 @@ import com.nhnacademy.account.domain.AccountRole;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
@@ -138,13 +138,11 @@ class AccountControllerTest {
     }
 
     @Test
-    void updateAccount() throws Exception {
-        UpdateAccountRequest request = new UpdateAccountRequest(
-                "test", "hashed"
-        );
+    void updateAccountName() throws Exception {
+        UpdateAccountNameRequest request = new UpdateAccountNameRequest("test");
         Account account = accountList.getFirst();
 
-        given(accountService.updateAccount(account.getUuid(), request))
+        given(accountService.updateAccountName(account.getUuid(), request))
                 .willReturn(accountList.getFirst());
 
         authenticate(account.getUuid());

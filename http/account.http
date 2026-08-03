@@ -67,16 +67,13 @@ Content-Type: application/json
   "newPassword": "{{newPassword}}"
 }
 
-### 내 계정 수정
-# 실행 후 로그인 비밀번호가 newPassword로 변경됩니다.
-PATCH {{baseUrl}}/api/accounts/me
+### 내 계정 이름 수정
+PUT {{baseUrl}}/api/accounts/me
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "uuid": "{{accountUuid}}",
-  "name": "updated-test",
-  "password": "{{newPassword}}"
+  "name": "updated-test"
 }
 
 ### 로그아웃
@@ -104,15 +101,22 @@ Content-Type: application/json
   "password": "adminpass"
 }
 
-### 관리자 - 계정 수정
-PATCH {{baseUrl}}/api/admin/accounts/{{accountUuid}}
+### 관리자 - 계정 이름 수정
+PUT {{baseUrl}}/api/accounts/admin/{{accountUuid}}
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 
 {
-  "uuid": "{{accountUuid}}",
-  "name": "admin-updated",
-  "password": null
+  "name": "admin-updated"
+}
+
+### 관리자 - 계정 비밀번호 수정
+PUT {{baseUrl}}/api/accounts/admin/{{accountUuid}}/pwd
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "password": "{{newPassword}}"
 }
 
 ### 관리자 - 계정 잠금

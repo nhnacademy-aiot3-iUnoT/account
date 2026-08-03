@@ -6,7 +6,8 @@ import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
@@ -84,7 +85,7 @@ public class AccountService {
     }
 
     @Transactional
-    public Account updateAccount(UUID uuid, UpdateAccountRequest request) {
+    public Account updateAccountName(UUID uuid, UpdateAccountNameRequest request) {
 
         Optional<Account> currentAccount = accountRepository.findByUuid(uuid);
 
@@ -98,16 +99,22 @@ public class AccountService {
             throw new ConflictException(ErrorCode.INVALID_ACCOUNT_STATE);
         }
 
-        if (request.name() != null) {
-            updatedAccount.changeName(request.name());
-        }
-
-
-        if (request.password() != null) {
-            String hashedPassword = passwordEncoder.encode(request.password());
-            updatedAccount.changeHashedPassword(hashedPassword);
-        }
+        updatedAccount.changeName(request.name());
         return updatedAccount;
+    }
+
+    @Transactional
+    public Account updateAccountPassword(UUID uuid, UpdateAccountPasswordRequest request) {
+        Account account = accountRepository.findByUuid(uuid)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        if (!account.isActive()) {
+            throw new ConflictException(ErrorCode.INVALID_ACCOUNT_STATE);
+        }
+
+        String hashedPassword = passwordEncoder.encode(request.password());
+        account.changeHashedPassword(hashedPassword);
+        return account;
     }
 
 

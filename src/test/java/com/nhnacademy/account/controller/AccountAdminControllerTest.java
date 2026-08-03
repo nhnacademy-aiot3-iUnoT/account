@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
+import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.domain.AccountStatusAction;
 import com.nhnacademy.account.service.AccountService;
 import org.junit.jupiter.api.AfterEach;
@@ -65,6 +67,50 @@ class AccountAdminControllerTest {
                 .andExpect(jsonPath("$.data.accountStatus").value("LOCKED"));
 
         then(accountService).should().changeAccountStatus(uuid, request);
+    }
+
+    @Test
+    void updateAccountName() throws Exception {
+        UUID uuid = UUID.randomUUID();
+        UpdateAccountNameRequest request = new UpdateAccountNameRequest("updated");
+        Account account = new Account("test", "test@test.com", "hashed");
+        Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
+
+        given(accountService.findAccount(admin.getUuid()))
+                .willReturn(admin);
+        given(accountService.updateAccountName(uuid, request))
+                .willReturn(account);
+
+        authenticate(admin.getUuid());
+
+        mockMvc.perform(put("/api/accounts/admin/{uuid}", uuid)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        then(accountService).should().updateAccountName(uuid, request);
+    }
+
+    @Test
+    void updateAccountPassword() throws Exception {
+        UUID uuid = UUID.randomUUID();
+        UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
+        Account account = new Account("test", "test@test.com", "hashed");
+        Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
+
+        given(accountService.findAccount(admin.getUuid()))
+                .willReturn(admin);
+        given(accountService.updateAccountPassword(uuid, request))
+                .willReturn(account);
+
+        authenticate(admin.getUuid());
+
+        mockMvc.perform(put("/api/accounts/admin/{uuid}/pwd", uuid)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        then(accountService).should().updateAccountPassword(uuid, request);
     }
 
     @Test
