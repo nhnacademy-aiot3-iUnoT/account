@@ -100,4 +100,28 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(errorCode));
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<?>> handleUnexpectedException(
+            Exception exception,
+            HttpServletRequest request
+    ) {
+        ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+
+        log.error(
+                "event=unexpected_error exceptionType={} errorCode={} code={} "
+                        + "httpStatus={} method={} path={}",
+                exception.getClass().getSimpleName(),
+                errorCode.name(),
+                errorCode.getCode(),
+                errorCode.getStatus().value(),
+                request.getMethod(),
+                request.getRequestURI(),
+                exception
+        );
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(errorCode));
+    }
+
 }

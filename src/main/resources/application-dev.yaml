@@ -10,3 +10,16 @@ security:
       - account-api
     allowed-algorithms:
       - rs256
+
+nhn:
+  server-host: http://localhost:10404
+
+spring:
+  config:
+    import: optional:file:./.env[.properties]
+
+management:
+  tracing:
+    export:
+      zipkin:
+        enabled: false

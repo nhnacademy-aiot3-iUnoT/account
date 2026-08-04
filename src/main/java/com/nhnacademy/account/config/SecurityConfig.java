@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.Assert;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -78,7 +79,11 @@ public class SecurityConfig {
                         ).permitAll()
 
                         .requestMatchers(
-                                "/api/auth/**", "/api/accounts/check-email", "/.well-known/jwks.json"
+                                "/api/auth/**",
+                                "/api/accounts/check-email",
+                                "/.well-known/jwks.json",
+                                "/api/accounts/pwd",
+                                "/api/accounts/pwd/**"
                         ).permitAll()
 
                         .requestMatchers(
@@ -156,4 +161,11 @@ public class SecurityConfig {
                 new OAuth2Error("invalid_token", description, null)
         );
     }
+
+    @Bean
+    public SecureRandom secureRandom() {
+        return new SecureRandom();
+    }
+
+
 }

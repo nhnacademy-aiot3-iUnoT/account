@@ -1,6 +1,7 @@
 package com.nhnacademy.account.global.util;
 
 import com.nhnacademy.account.global.error.ErrorCode;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,11 +22,24 @@ public class SecurityErrorResponseWriter {
             HttpServletResponse response,
             ErrorCode errorCode
     ) throws IOException {
+        write(null, response, errorCode, null);
+    }
+
+    public void write(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            ErrorCode errorCode,
+            Exception exception
+    ) throws IOException {
         log.warn(
-                "event=security_error errorCode={} code={} httpStatus={}",
+                "event=security_error exceptionType={} errorCode={} code={} "
+                        + "httpStatus={} method={} path={}",
+                exception == null ? "none" : exception.getClass().getSimpleName(),
                 errorCode.name(),
                 errorCode.getCode(),
-                errorCode.getStatus().value()
+                errorCode.getStatus().value(),
+                request == null ? "unknown" : request.getMethod(),
+                request == null ? "unknown" : request.getRequestURI()
         );
 
         response.setStatus(errorCode.getStatus().value());

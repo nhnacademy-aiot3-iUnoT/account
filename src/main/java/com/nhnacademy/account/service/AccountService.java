@@ -66,8 +66,17 @@ public class AccountService {
         }
     }
 
+    public boolean existsByEmail(String email) {
+        return accountRepository.existsByEmail(email);
+    }
+
     public Account findAccount(UUID uuid) {
         return accountRepository.findByUuid(uuid)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+    }
+
+    public Account findAccountByEmail(String email) {
+        return accountRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
     }
 

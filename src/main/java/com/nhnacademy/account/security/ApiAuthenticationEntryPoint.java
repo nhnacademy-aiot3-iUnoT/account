@@ -23,6 +23,6 @@ public class ApiAuthenticationEntryPoint implements AuthenticationEntryPoint {
             HttpServletResponse response,
             AuthenticationException authException
     ) throws IOException, ServletException {
-        writer.write(response, ErrorCode.UNAUTHORIZED);
+        writer.write(request, response, ErrorCode.UNAUTHORIZED, authException);
     }
 }
