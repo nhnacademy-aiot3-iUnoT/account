@@ -47,7 +47,6 @@ security:
       - inventory-api
     access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:30m}
     key-id: ${JWT_KEY_ID:account-key-001}
-    jwk-set-uri: http://localhost:${server.port:8080}/.well-known/jwks.json
     audiences:
       - account-api
     allowed-algorithms:

@@ -7,7 +7,6 @@ import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.validation.annotation.Validated;
 
 import java.io.File;
-import java.net.URI;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -23,9 +22,6 @@ import jakarta.validation.constraints.NotNull;
 public class JwtProperties {
     @Setter
     private File privateKeyPath;
-
-    @Setter
-    private URI jwkSetUri;
 
     @Setter
     @NotBlank
