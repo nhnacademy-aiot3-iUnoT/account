@@ -2,6 +2,8 @@ package com.nhnacademy.account.config;
 
 import com.nhnacademy.account.security.ApiAccessDeniedHandler;
 import com.nhnacademy.account.security.ApiAuthenticationEntryPoint;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -75,14 +77,13 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/actuator/health", "/actuator/health/**", "/actuator/serviceregistry"
+                                "/actuator/health/**", "/actuator/serviceregistry"
                         ).permitAll()
 
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/api/accounts/check-email",
                                 "/.well-known/jwks.json",
-                                "/api/accounts/pwd",
                                 "/api/accounts/pwd/**"
                         ).permitAll()
 
@@ -97,8 +98,10 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(JwtProperties properties) {
-        Assert.notNull(properties.getJwkSetUri(), "security.jwt.jwk-set-uri must be configured");
+    public JwtDecoder jwtDecoder(
+            JwtProperties properties,
+            JWKSource<SecurityContext> jwkSource
+    ) {
         Assert.hasText(properties.getIssuer(), "security.jwt.issuer must be configured");
         Assert.notEmpty(properties.getAudiences(), "security.jwt.audiences must not be empty");
         Assert.notEmpty(
@@ -106,8 +109,8 @@ public class SecurityConfig {
                 "security.jwt.allowed-algorithms must not be empty"
         );
 
-        NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder builder =
-                NimbusJwtDecoder.withJwkSetUri(properties.getJwkSetUri().toString());
+        NimbusJwtDecoder.JwkSourceJwtDecoderBuilder builder =
+                NimbusJwtDecoder.withJwkSource(jwkSource);
         properties.getAllowedAlgorithms().forEach(builder::jwsAlgorithm);
 
         NimbusJwtDecoder decoder = builder.build();

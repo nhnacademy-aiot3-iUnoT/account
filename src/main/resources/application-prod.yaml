@@ -17,8 +17,7 @@ management:
 
 security:
   jwt:
-    issuer: account-api
-    jwk-set-uri: http://localhost:${server.port:8080}/.well-known/jwks.json
+    issuer: ${JWT_ISSUER:account-api}
     audiences:
       - account-api
     allowed-algorithms:
