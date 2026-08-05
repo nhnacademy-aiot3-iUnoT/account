@@ -1,11 +1,12 @@
 package com.nhnacademy.account.security;
 
+import com.nhnacademy.account.config.JwtProperties;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.security.PrivateKey;
-import java.time.Duration;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
@@ -13,21 +14,20 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class JwtProvider {
-    private static final Duration ACCESS_TOKEN_EXPIRATION = Duration.ofMinutes(30);
-
     private final PrivateKey jwtPrivateKey;
+    private final JwtProperties properties;
+    private final Clock clock;
 
     public String createAccessToken(UUID accountUuid) {
-        Instant issuedAt = Instant.now();
-        Instant expiresAt = issuedAt.plus(ACCESS_TOKEN_EXPIRATION);
+        Instant issuedAt = clock.instant();
+        Instant expiresAt = issuedAt.plus(properties.getAccessTokenTtl());
 
         return Jwts.builder()
                 .header()
-                    .keyId("account-key-001")
+                    .keyId(properties.getKeyId())
                     .and()
-                .issuer("account-api")
-                .audience().add("account-api").and()
-                .audience().add("inventory-api").and()
+                .issuer(properties.getIssuer())
+                .audience().add(properties.getIssuedAudiences()).and()
                 .subject(accountUuid.toString())
                 .issuedAt(Date.from(issuedAt))
                 .expiration(Date.from(expiresAt))

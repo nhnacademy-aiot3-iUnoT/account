@@ -1,5 +1,7 @@
 package com.nhnacademy.account.controller;
 
+import com.nhnacademy.account.config.JwtProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -10,13 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@RequiredArgsConstructor
 public class JwkSetController {
-    private static final String KEY_ID = "account-key-001";
     private final RSAPublicKey publicKey;
-
-    public JwkSetController(RSAPublicKey publicKey) {
-        this.publicKey = publicKey;
-    }
+    private final JwtProperties properties;
 
     @GetMapping("/.well-known/jwks.json")
     public Map<String, Object> jwkSet() {
@@ -24,7 +23,7 @@ public class JwkSetController {
                 "kty", "RSA",
                 "use", "sig",
                 "alg", "RS256",
-                "kid", KEY_ID,
+                "kid", properties.getKeyId(),
                 "n", base64UrlUnsigned(publicKey.getModulus()),
                 "e", base64UrlUnsigned(publicKey.getPublicExponent())
         );

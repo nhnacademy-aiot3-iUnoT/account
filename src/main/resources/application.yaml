@@ -22,7 +22,7 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-      database: 36
+      database: ${REDIS_RANGE:36}
 
 management:
   health:
@@ -41,7 +41,12 @@ server:
 
 security:
   jwt:
-    issuer: account-api
+    issuer: ${JWT_ISSUER:account-api}
+    issued-audiences:
+      - account-api
+      - inventory-api
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:30m}
+    key-id: ${JWT_KEY_ID:account-key-001}
     jwk-set-uri: http://localhost:${server.port:8080}/.well-known/jwks.json
     audiences:
       - account-api
