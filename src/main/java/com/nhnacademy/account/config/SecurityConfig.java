@@ -23,6 +23,7 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.Assert;
 
@@ -75,7 +76,8 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/actuator/health/**", "/actuator/serviceregistry"
+                                "/actuator/health/**",
+                                "/actuator/serviceregistry"
                         ).permitAll()
 
                         .requestMatchers(
@@ -85,11 +87,14 @@ public class SecurityConfig {
                                 "/api/accounts/pwd/**"
                         ).permitAll()
 
-                        .requestMatchers(
-                                HttpMethod.POST, "/api/accounts"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/accounts")
+                        .permitAll()
 
-                        .anyRequest().authenticated()
+                        .requestMatchers("/api/accounts/admin/**")
+                        .hasRole("ADMIN")
+
+                        .anyRequest()
+                        .authenticated()
                 );
 
         return http.build();
@@ -118,8 +123,16 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
+
+        authoritiesConverter.setAuthoritiesClaimName("roles");
+        authoritiesConverter.setAuthorityPrefix("ROLE_");
+
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+
         converter.setPrincipalClaimName("sub");
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+
         return converter;
     }
 

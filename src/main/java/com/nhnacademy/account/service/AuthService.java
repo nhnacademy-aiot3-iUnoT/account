@@ -41,7 +41,7 @@ public class AuthService {
             throw new ForbiddenException(ErrorCode.ACCOUNT_INACTIVE);
         }
 
-        String token = jwtProvider.createAccessToken(account.getUuid());
+        String token = jwtProvider.createAccessToken(account.getUuid(), account.getAccountRole());
         return new LoginResponse(token);
     }
 }
