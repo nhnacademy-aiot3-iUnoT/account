@@ -21,15 +21,13 @@ import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.Assert;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -136,12 +134,23 @@ public class SecurityConfig {
     }
 
     private OAuth2TokenValidator<Jwt> jwtValidator(JwtProperties properties) {
+
+        JwtTimestampValidator timestampValidator = new JwtTimestampValidator(Duration.ofSeconds(30));
+
+        timestampValidator.setAllowEmptyExpiryClaim(false);
+
         List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>();
-        validators.add(JwtValidators.createDefaultWithIssuer(properties.getIssuer()));
+        validators.add(JwtValidators.createDefaultWithValidators(
+                timestampValidator,
+                new JwtIssuerValidator(properties.getIssuer())
+        ));
+
         validators.add(jwt -> jwt.getHeaders().get("kid") instanceof String kid && !kid.isBlank()
                 ? OAuth2TokenValidatorResult.success()
                 : validationFailure("JWT kid header is required"));
+
         validators.add(this::validateUuidSubject);
+
         validators.add(jwt -> jwt.getAudience().stream()
                 .anyMatch(properties.getAudiences()::contains)
                 ? OAuth2TokenValidatorResult.success()
