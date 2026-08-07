@@ -5,6 +5,7 @@ import com.nhnacademy.account.security.ApiAuthenticationEntryPoint;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -76,8 +77,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/actuator/health/**",
-                                "/actuator/serviceregistry"
+                            EndpointRequest.toAnyEndpoint()
                         ).permitAll()
 
                         .requestMatchers(
@@ -139,11 +139,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-        return configuration.getAuthenticationManager();
     }
 
     private OAuth2TokenValidator<Jwt> jwtValidator(JwtProperties properties) {
