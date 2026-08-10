@@ -10,6 +10,7 @@ import com.nhnacademy.account.dto.request.ResetPasswordTokenRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.response.CreateAccountResponse;
 import com.nhnacademy.account.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
@@ -112,12 +113,14 @@ class AccountControllerTest {
         );
 
         given(accountService.createAccount(any(CreateAccountRequest.class)))
-                .willReturn();
+                .willReturn(new CreateAccountResponse(true));
 
         mockMvc.perform(post("/api/accounts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.isOwner").value(true));
     }
 
 

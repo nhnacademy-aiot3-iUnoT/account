@@ -62,7 +62,7 @@ public class AccountService {
             throw saveException;
         }
 
-        return new CreateAccountResponse(true, invitationResponse.isOwner());
+        return new CreateAccountResponse(invitationResponse.isOwner());
     }
 
     @Transactional
