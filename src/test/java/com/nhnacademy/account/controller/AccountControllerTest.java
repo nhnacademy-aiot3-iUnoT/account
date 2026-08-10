@@ -123,6 +123,25 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data.isOwner").value(true));
     }
 
+    @Test
+    void createAccountRejectsMalformedInviteToken() throws Exception {
+        mockMvc.perform(post("/api/accounts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "inviteToken": "inviteToken",
+                                  "name": "test",
+                                  "email": "test@test.com",
+                                  "password": "password"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("G001"));
+
+        then(accountService).shouldHaveNoInteractions();
+    }
+
 
     void withdrawnAccountDoesNotExposeRemovedPersonalInformation() throws Exception {
         Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
