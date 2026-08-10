@@ -30,3 +30,7 @@ security:
 
 nhn:
   server-host: https://iunot.cloud
+
+clients:
+  inventory:
+    base-url: ${INVENTORY_BASE_URL:http://inventory}

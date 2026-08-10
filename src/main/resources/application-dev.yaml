@@ -13,6 +13,10 @@ security:
 nhn:
   server-host: http://localhost:10404
 
+clients:
+  inventory:
+    base-url: ${INVENTORY_BASE_URL:http://localhost:10411}
+
 spring:
   config:
     import: optional:file:./.env[.properties]
