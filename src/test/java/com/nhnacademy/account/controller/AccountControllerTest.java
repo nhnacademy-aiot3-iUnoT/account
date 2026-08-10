@@ -108,11 +108,11 @@ class AccountControllerTest {
     @Test
     void createAccount() throws Exception {
         CreateAccountRequest request = new CreateAccountRequest(
-                "test", "test@test.com", "hashed"
+                UUID.randomUUID(), "test", "test@test.com", "hashed"
         );
 
         given(accountService.createAccount(any(CreateAccountRequest.class)))
-                .willReturn(accountList.getFirst());
+                .willReturn();
 
         mockMvc.perform(post("/api/accounts")
                         .contentType(MediaType.APPLICATION_JSON)

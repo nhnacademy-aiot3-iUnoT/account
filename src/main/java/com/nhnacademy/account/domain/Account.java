@@ -1,5 +1,6 @@
 package com.nhnacademy.account.domain;
 
+import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.global.error.exception.ConflictException;
@@ -15,7 +16,7 @@ import java.util.UUID;
 
 @Entity
 @Getter
-@Table(name = "account")
+@Table(name = "accounts")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Account {
 

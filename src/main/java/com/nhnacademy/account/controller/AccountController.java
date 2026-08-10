@@ -1,10 +1,9 @@
 package com.nhnacademy.account.controller;
 
 import com.nhnacademy.account.dto.request.*;
+import com.nhnacademy.account.dto.response.CreateAccountResponse;
 import com.nhnacademy.account.global.error.ErrorCode;
-import com.nhnacademy.account.global.error.exception.ForbiddenException;
 import com.nhnacademy.account.global.error.exception.NotFoundException;
-import com.nhnacademy.account.global.error.exception.UnauthorizedException;
 import com.nhnacademy.account.security.AccountUUID;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.dto.response.AccountResponse;
@@ -20,10 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.security.auth.login.AccountNotFoundException;
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.HexFormat;
 import java.util.UUID;
 
@@ -43,10 +40,11 @@ public class AccountController {
     public ResponseEntity<ApiResponse<?>> createAccount(
             @Valid @RequestBody CreateAccountRequest request
     ) {
-        Account account = accountService.createAccount(request);
+        CreateAccountResponse response = accountService.createAccount(request);
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.ok());
+                .body(ApiResponse.success(response));
     }
 
     @GetMapping("/me")

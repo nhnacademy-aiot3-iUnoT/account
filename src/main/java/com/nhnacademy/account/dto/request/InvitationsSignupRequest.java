@@ -2,9 +2,9 @@ package com.nhnacademy.account.dto.request;
 
 import java.util.UUID;
 
-public record CreateOrganizationWithMemberRequest(
-        String token,
+public record InvitationsSignupRequest(
+        UUID token,
         String email,
-        UUID uuid
+        UUID accountUuid
 ) {
 }
