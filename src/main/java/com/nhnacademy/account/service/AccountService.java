@@ -66,7 +66,7 @@ public class AccountService {
     }
 
     @Transactional
-    public Account createAdminAccount(CreateAccountRequest request) {
+    public Account createAdminAccount(CreateAdminAccountRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
         Account account = new Account(request.name(), request.email(), hashedPassword, AccountRole.ADMIN);
 

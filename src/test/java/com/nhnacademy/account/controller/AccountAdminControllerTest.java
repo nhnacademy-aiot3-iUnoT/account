@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.domain.AccountStatusAction;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,6 +44,37 @@ class AccountAdminControllerTest {
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void createAdminAccountWithoutInviteToken() throws Exception {
+        CreateAdminAccountRequest request = new CreateAdminAccountRequest(
+                "new-admin",
+                "new-admin@test.com",
+                "password"
+        );
+        Account requester = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
+        Account created = new Account(
+                request.name(),
+                request.email(),
+                "hashed",
+                AccountRole.ADMIN
+        );
+
+        given(accountService.findAccount(requester.getUuid()))
+                .willReturn(requester);
+        given(accountService.createAdminAccount(request))
+                .willReturn(created);
+        authenticate(requester.getUuid());
+
+        mockMvc.perform(post("/api/accounts/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.email").value(request.email()))
+                .andExpect(jsonPath("$.data.accountRole").value("ADMIN"));
+
+        then(accountService).should().createAdminAccount(request);
     }
 
     @Test

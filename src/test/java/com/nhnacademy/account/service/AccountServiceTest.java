@@ -3,6 +3,7 @@ package com.nhnacademy.account.service;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountStatusAction;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.InvitationsSignupRequest;
@@ -218,8 +219,7 @@ class AccountServiceTest {
 
     @Test
     void createAdminAccount() {
-        CreateAccountRequest request = new CreateAccountRequest(
-                UUID.randomUUID(),
+        CreateAdminAccountRequest request = new CreateAdminAccountRequest(
                 "test",
                 "test@test.com",
                 "hashed"
@@ -250,8 +250,7 @@ class AccountServiceTest {
 
     @Test
     void createAdminAccountWithExistingEmail() {
-        CreateAccountRequest request = new CreateAccountRequest(
-                UUID.randomUUID(),
+        CreateAdminAccountRequest request = new CreateAdminAccountRequest(
                 "test",
                 "test@test.com",
                 "hashed"
