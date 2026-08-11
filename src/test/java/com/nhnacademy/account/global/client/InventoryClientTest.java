@@ -2,6 +2,7 @@ package com.nhnacademy.account.global.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.account.global.error.ErrorCode;
+import com.nhnacademy.account.global.error.exception.UpstreamServiceException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -27,7 +27,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,8 +38,7 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -96,7 +94,25 @@ class AccountAdminControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.email").value(request.email()))
-                .andExpect(jsonPath("$.data.accountRole").value("ADMIN"));
+                .andExpect(jsonPath("$.data.accountRole").value("ADMIN"))
+                .andDo(document("admin-create-account",
+                        requestFields(
+                                fieldWithPath("name").description("관리자 이름"),
+                                fieldWithPath("email").description("관리자 이메일"),
+                                fieldWithPath("password").description("관리자 비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("생성된 관리자 정보"),
+                                fieldWithPath("data.uuid").description("관리자 UUID"),
+                                fieldWithPath("data.name").description("관리자 이름"),
+                                fieldWithPath("data.email").description("관리자 이메일"),
+                                fieldWithPath("data.accountRole").description("관리자 권한"),
+                                fieldWithPath("data.accountStatus").description("관리자 상태"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
         then(accountService).should().createAdminAccount(request);
     }
