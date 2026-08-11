@@ -14,18 +14,24 @@ import com.nhnacademy.account.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.RestDocumentationContextProvider;
+import org.springframework.restdocs.RestDocumentationExtension;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Duration;
 import java.util.List;
@@ -36,19 +42,24 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Slf4j
+@ExtendWith(RestDocumentationExtension.class)
 @WebMvcTest(
         controllers = {AccountController.class, AccountAdminController.class},
         properties = "nhn.server-host=http://localhost:10404"
 )
 class AccountControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private WebApplicationContext context;
 
     @MockitoBean
     private AccountService accountService;
@@ -67,7 +78,11 @@ class AccountControllerTest {
     private List<Account> accountList;
 
     @BeforeEach
-    void setUp() {
+    void setUp(RestDocumentationContextProvider restDocumentation) {
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(documentationConfiguration(restDocumentation))
+                .build();
+
         given(redisTemplate.opsForValue()).willReturn(valueOperations);
 
         accountList = List.of(
@@ -82,30 +97,8 @@ class AccountControllerTest {
     }
 
 
-
-    void viewAllAccounts() throws Exception {
-        Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
-
-        given(accountService.findAccount(admin.getUuid()))
-                .willReturn(admin);
-        given(accountService.findAll())
-                .willReturn(accountList);
-
-        authenticate(admin.getUuid());
-
-        mockMvc.perform(get("/api/accounts/admin"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].uuid").value(accountList.getFirst().getUuid().toString()))
-                .andExpect(jsonPath("$.data[0].name").value("test"))
-                .andExpect(jsonPath("$.data[0].email").value("test@test.com"))
-                .andExpect(jsonPath("$.data[0].accountRole").value("USER"))
-                .andExpect(jsonPath("$.data[0].accountStatus").value("ACTIVE"))
-                .andExpect(jsonPath("$.data[0].id").doesNotExist())
-                .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist());
-
-    }
-
     @Test
+    @DisplayName("POST - 회원가입")
     void createAccount() throws Exception {
         CreateAccountRequest request = new CreateAccountRequest(
                 "test", "test@test.com", "hashed"
@@ -117,10 +110,14 @@ class AccountControllerTest {
         mockMvc.perform(post("/api/accounts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andDo(
+                        document("create-account")
+                );
     }
 
-
+    @Test
+    @DisplayName("GET - 탈퇴 회원 개인정보 미노출")
     void withdrawnAccountDoesNotExposeRemovedPersonalInformation() throws Exception {
         Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
         Account withdrawnAccount = accountList.getFirst();
@@ -139,10 +136,12 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data[0].accountStatus").value("WITHDRAWN"))
                 .andExpect(jsonPath("$.data[0].name").doesNotExist())
                 .andExpect(jsonPath("$.data[0].email").doesNotExist())
-                .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist());
+                .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist())
+                .andDo(document("admin-list-withdrawn-accounts"));
     }
 
-
+    @Test
+    @DisplayName("GET - 본인 계정 조회")
     void getCurrentAccount() throws Exception {
         Account account = accountList.getFirst();
 
@@ -155,10 +154,12 @@ class AccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.uuid").value(accountList.getFirst().getUuid().toString()))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
-                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist());
+                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist())
+                .andDo(document("get-current-account"));
     }
 
     @Test
+    @DisplayName("PUT - 본인 이름 수정")
     void updateAccountName() throws Exception {
         UpdateAccountNameRequest request = new UpdateAccountNameRequest("test");
         Account account = accountList.getFirst();
@@ -174,10 +175,12 @@ class AccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.uuid").value(accountList.getFirst().getUuid().toString()))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
-                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist());
+                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist())
+                .andDo(document("update-account-name"));
     }
 
     @Test
+    @DisplayName("PUT - 비밀번호 수정")
     void updateAccountPassword() throws Exception {
         UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
         Account account = accountList.getFirst();
@@ -193,12 +196,14 @@ class AccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.uuid").value(account.getUuid().toString()))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
-                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist());
+                .andExpect(jsonPath("$.data.hashedPassword").doesNotExist())
+                .andDo(document("update-account-password"));
 
         then(accountService).should().updateAccountPassword(account.getUuid(), request);
     }
 
     @Test
+    @DisplayName("DELETE - 회원 탈퇴")
     void deleteAccount() throws Exception {
         WithdrawAccountRequest request = new WithdrawAccountRequest(
                 "hashed"
@@ -210,10 +215,12 @@ class AccountControllerTest {
         mockMvc.perform(delete("/api/accounts/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andDo(document("withdraw-account"));
     }
 
     @Test
+    @DisplayName("POST - 이메일 사용 가능 여부 확인")
     void checkEmailAvailability() throws Exception {
         EmailAvailabilityRequest request = new EmailAvailabilityRequest("available@test.com");
 
@@ -224,10 +231,12 @@ class AccountControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.available").value(true));
+                .andExpect(jsonPath("$.data.available").value(true))
+                .andDo(document("check-email-availability"));
     }
 
     @Test
+    @DisplayName("POST - 비밀번호 재사용 가능 여부 확인")
     void checkPasswordAvailability() throws Exception {
         PasswordReuseCheckRequest request = new PasswordReuseCheckRequest("new-password");
         UUID accountUuid = UUID.randomUUID();
@@ -242,12 +251,14 @@ class AccountControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.available").value(true))
-                .andExpect(jsonPath("$.data.sameAsCurrent").doesNotExist());
+                .andExpect(jsonPath("$.data.sameAsCurrent").doesNotExist())
+                .andDo(document("check-password-availability"));
 
         then(accountService).should().availablePassword(accountUuid, request);
     }
 
     @Test
+    @DisplayName("POST - 비밀번호 재설정 토큰 발급")
     void issuePasswordResetToken() throws Exception {
         String email = "test@test.com";
         ResetPasswordTokenRequest request = new ResetPasswordTokenRequest(email);
@@ -258,7 +269,8 @@ class AccountControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath("$.success").value(true))
+                .andDo(document("issue-password-reset-token"));
 
         ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
         then(emailService).should().sendText(
@@ -277,6 +289,7 @@ class AccountControllerTest {
     }
 
     @Test
+    @DisplayName("POST - 비밀번호 재설정")
     void resetPasswordWithValidToken() throws Exception {
         String token = "a".repeat(64);
         String email = "test@test.com";
@@ -291,7 +304,8 @@ class AccountControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath("$.success").value(true))
+                .andDo(document("reset-password"));
 
         then(accountService).should().findAccountByEmail(email);
         then(accountService).should().updateAccountPassword(account.getUuid(), request);
@@ -299,6 +313,7 @@ class AccountControllerTest {
     }
 
     @Test
+    @DisplayName("POST - 유효하지 않은 비밀번호 재설정 토큰 거부")
     void rejectInvalidPasswordResetToken() throws Exception {
         String token = "b".repeat(64);
         UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
@@ -310,7 +325,8 @@ class AccountControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("A001"));
+                .andExpect(jsonPath("$.error.code").value("A001"))
+                .andDo(document("reset-password-invalid-token"));
     }
 
     private void authenticate(UUID accountUuid) {

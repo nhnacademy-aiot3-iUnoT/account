@@ -20,10 +20,12 @@ public record AccountResponse(
         LocalDateTime withdrawnAt
 ) {
     public static AccountResponse from(Account account) {
+        boolean withdrawn = account.isWithdrawn();
+
         return new AccountResponse(
                 account.getUuid(),
-                account.getName(),
-                account.getEmail(),
+                withdrawn ? null : account.getName(),
+                withdrawn ? null : account.getEmail(),
                 account.getAccountRole(),
                 account.getAccountStatus(),
                 account.getCreatedAt(),
