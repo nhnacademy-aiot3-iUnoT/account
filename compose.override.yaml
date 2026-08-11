@@ -1,0 +1,5 @@
+services:
+  account-1:
+    build: .
+  account-2:
+    build: .

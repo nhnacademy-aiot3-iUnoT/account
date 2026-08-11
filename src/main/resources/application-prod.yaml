@@ -26,7 +26,8 @@ security:
       - account-api
     allowed-algorithms:
       - rs256
-    private-key-path: ${JWT_PRIVATE_KEY_PATH}
+    private-key-path: ${JWT_PRIVATE_KEY_PATH:/var/lib/account/keys/jwt-private.pem}
 
 nhn:
   server-host: https://iunot.cloud
+
