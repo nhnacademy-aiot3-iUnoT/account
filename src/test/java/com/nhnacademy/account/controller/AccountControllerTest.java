@@ -11,6 +11,7 @@ import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.service.AccountService;
+import com.nhnacademy.account.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
