@@ -11,6 +11,7 @@ import com.nhnacademy.account.dto.response.EmailAvailabilityResponse;
 import com.nhnacademy.account.dto.response.PasswordReuseCheckResponse;
 import com.nhnacademy.account.service.AccountService;
 import com.nhnacademy.account.global.util.ApiResponse;
+import com.nhnacademy.account.service.EmailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

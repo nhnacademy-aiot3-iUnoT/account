@@ -1,0 +1,12 @@
+= iUnoT API Documentation
+:doctype: book
+:toc: left
+:toclevels: 3
+:sectnums:
+:source-highlighter: highlightjs
+
+include::auth.adoc[]
+
+include::account.adoc[]
+
+include::admin.adoc[]

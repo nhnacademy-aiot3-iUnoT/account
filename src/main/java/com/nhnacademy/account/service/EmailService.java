@@ -1,4 +1,4 @@
-package com.nhnacademy.account.controller;
+package com.nhnacademy.account.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
