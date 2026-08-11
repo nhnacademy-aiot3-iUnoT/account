@@ -44,6 +44,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -111,9 +114,19 @@ class AccountControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andDo(
-                        document("create-account")
-                );
+                .andDo(document("create-account",
+                        requestFields(
+                                fieldWithPath("name").description("회원 이름"),
+                                fieldWithPath("email").description("회원 이메일"),
+                                fieldWithPath("password").description("회원 비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("응답 데이터"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
     }
 
     @Test
@@ -137,7 +150,18 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data[0].name").doesNotExist())
                 .andExpect(jsonPath("$.data[0].email").doesNotExist())
                 .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist())
-                .andDo(document("admin-list-withdrawn-accounts"));
+                .andDo(document("admin-list-withdrawn-accounts",
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("탈퇴 회원 목록"),
+                                fieldWithPath("data[].uuid").description("회원 UUID"),
+                                fieldWithPath("data[].accountRole").description("회원 권한"),
+                                fieldWithPath("data[].accountStatus").description("회원 상태"),
+                                fieldWithPath("data[].withdrawnAt").description("회원 탈퇴 시각"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
     }
 
     @Test
@@ -155,7 +179,19 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data.uuid").value(accountList.getFirst().getUuid().toString()))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
                 .andExpect(jsonPath("$.data.hashedPassword").doesNotExist())
-                .andDo(document("get-current-account"));
+                .andDo(document("get-current-account",
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("회원 정보"),
+                                fieldWithPath("data.uuid").description("회원 UUID"),
+                                fieldWithPath("data.name").description("회원 이름"),
+                                fieldWithPath("data.email").description("회원 이메일"),
+                                fieldWithPath("data.accountRole").description("회원 권한"),
+                                fieldWithPath("data.accountStatus").description("회원 상태"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
     }
 
     @Test
@@ -176,7 +212,22 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data.uuid").value(accountList.getFirst().getUuid().toString()))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
                 .andExpect(jsonPath("$.data.hashedPassword").doesNotExist())
-                .andDo(document("update-account-name"));
+                .andDo(document("update-account-name",
+                        requestFields(
+                                fieldWithPath("name").description("변경할 회원 이름")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("변경된 회원 정보"),
+                                fieldWithPath("data.uuid").description("회원 UUID"),
+                                fieldWithPath("data.name").description("회원 이름"),
+                                fieldWithPath("data.email").description("회원 이메일"),
+                                fieldWithPath("data.accountRole").description("회원 권한"),
+                                fieldWithPath("data.accountStatus").description("회원 상태"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
     }
 
     @Test
@@ -197,7 +248,22 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data.uuid").value(account.getUuid().toString()))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
                 .andExpect(jsonPath("$.data.hashedPassword").doesNotExist())
-                .andDo(document("update-account-password"));
+                .andDo(document("update-account-password",
+                        requestFields(
+                                fieldWithPath("password").description("변경할 비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("변경된 회원 정보"),
+                                fieldWithPath("data.uuid").description("회원 UUID"),
+                                fieldWithPath("data.name").description("회원 이름"),
+                                fieldWithPath("data.email").description("회원 이메일"),
+                                fieldWithPath("data.accountRole").description("회원 권한"),
+                                fieldWithPath("data.accountStatus").description("회원 상태"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
         then(accountService).should().updateAccountPassword(account.getUuid(), request);
     }
@@ -216,7 +282,17 @@ class AccountControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andDo(document("withdraw-account"));
+                .andDo(document("withdraw-account",
+                        requestFields(
+                                fieldWithPath("password").description("본인 확인용 비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("응답 데이터"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
     }
 
     @Test
@@ -232,7 +308,18 @@ class AccountControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.available").value(true))
-                .andDo(document("check-email-availability"));
+                .andDo(document("check-email-availability",
+                        requestFields(
+                                fieldWithPath("email").description("사용 가능 여부를 확인할 이메일")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("이메일 확인 결과"),
+                                fieldWithPath("data.available").description("이메일 사용 가능 여부"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
     }
 
     @Test
@@ -252,7 +339,18 @@ class AccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.available").value(true))
                 .andExpect(jsonPath("$.data.sameAsCurrent").doesNotExist())
-                .andDo(document("check-password-availability"));
+                .andDo(document("check-password-availability",
+                        requestFields(
+                                fieldWithPath("newPassword").description("재사용 여부를 확인할 새 비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("비밀번호 확인 결과"),
+                                fieldWithPath("data.available").description("비밀번호 사용 가능 여부"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
         then(accountService).should().availablePassword(accountUuid, request);
     }
@@ -270,7 +368,17 @@ class AccountControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andDo(document("issue-password-reset-token"));
+                .andDo(document("issue-password-reset-token",
+                        requestFields(
+                                fieldWithPath("email").description("비밀번호를 초기화할 회원 이메일")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("응답 데이터"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
         ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
         then(emailService).should().sendText(
@@ -305,7 +413,17 @@ class AccountControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andDo(document("reset-password"));
+                .andDo(document("reset-password",
+                        requestFields(
+                                fieldWithPath("password").description("변경할 새 비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("응답 데이터"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
         then(accountService).should().findAccountByEmail(email);
         then(accountService).should().updateAccountPassword(account.getUuid(), request);
@@ -326,7 +444,20 @@ class AccountControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("A001"))
-                .andDo(document("reset-password-invalid-token"));
+                .andDo(document("reset-password-invalid-token",
+                        requestFields(
+                                fieldWithPath("password").description("변경할 새 비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("응답 데이터"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("error.code").description("오류 코드"),
+                                fieldWithPath("error.message").description("오류 메시지"),
+                                fieldWithPath("error.fieldErrors").description("필드 단위 오류 목록"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
     }
 
     private void authenticate(UUID accountUuid) {

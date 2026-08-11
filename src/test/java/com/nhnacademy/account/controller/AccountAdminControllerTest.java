@@ -35,6 +35,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -90,7 +93,19 @@ class AccountAdminControllerTest {
                 .andExpect(jsonPath("$.data[0].accountStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.data[0].id").doesNotExist())
                 .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist())
-                .andDo(document("admin-list-accounts"));
+                .andDo(document("admin-list-accounts",
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("회원 목록"),
+                                fieldWithPath("data[].uuid").description("회원 UUID"),
+                                fieldWithPath("data[].name").description("회원 이름"),
+                                fieldWithPath("data[].email").description("회원 이메일"),
+                                fieldWithPath("data[].accountRole").description("회원 권한"),
+                                fieldWithPath("data[].accountStatus").description("회원 상태"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
     }
 
@@ -116,7 +131,23 @@ class AccountAdminControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accountStatus").value("LOCKED"))
-                .andDo(document("admin-change-account-status"));
+                .andDo(document("admin-change-account-status",
+                        requestFields(
+                                fieldWithPath("action").description("상태 변경 작업(LOCK, UNLOCK, DEACTIVATE, REACTIVATE)"),
+                                fieldWithPath("reason").description("상태 변경 사유")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("변경된 회원 정보"),
+                                fieldWithPath("data.uuid").description("회원 UUID"),
+                                fieldWithPath("data.name").description("회원 이름"),
+                                fieldWithPath("data.email").description("회원 이메일"),
+                                fieldWithPath("data.accountRole").description("회원 권한"),
+                                fieldWithPath("data.accountStatus").description("변경된 회원 상태"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
         then(accountService).should().changeAccountStatus(uuid, request);
     }
@@ -140,7 +171,22 @@ class AccountAdminControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andDo(document("admin-update-account-name"));
+                .andDo(document("admin-update-account-name",
+                        requestFields(
+                                fieldWithPath("name").description("변경할 회원 이름")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("변경된 회원 정보"),
+                                fieldWithPath("data.uuid").description("회원 UUID"),
+                                fieldWithPath("data.name").description("회원 이름"),
+                                fieldWithPath("data.email").description("회원 이메일"),
+                                fieldWithPath("data.accountRole").description("회원 권한"),
+                                fieldWithPath("data.accountStatus").description("회원 상태"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
         then(accountService).should().updateAccountName(uuid, request);
     }
@@ -164,7 +210,22 @@ class AccountAdminControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andDo(document("admin-update-account-password"));
+                .andDo(document("admin-update-account-password",
+                        requestFields(
+                                fieldWithPath("password").description("변경할 비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("변경된 회원 정보"),
+                                fieldWithPath("data.uuid").description("회원 UUID"),
+                                fieldWithPath("data.name").description("회원 이름"),
+                                fieldWithPath("data.email").description("회원 이메일"),
+                                fieldWithPath("data.accountRole").description("회원 권한"),
+                                fieldWithPath("data.accountStatus").description("회원 상태"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
         then(accountService).should().updateAccountPassword(uuid, request);
     }
@@ -183,7 +244,21 @@ class AccountAdminControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andDo(document("admin-change-account-status-validation-error"));
+                .andDo(document("admin-change-account-status-validation-error",
+                        requestFields(
+                                fieldWithPath("action").description("상태 변경 작업(LOCK, UNLOCK, DEACTIVATE, REACTIVATE)"),
+                                fieldWithPath("reason").description("상태 변경 사유")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("응답 데이터"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("error.code").description("오류 코드"),
+                                fieldWithPath("error.message").description("오류 메시지"),
+                                fieldWithPath("error.fieldErrors").description("필드 단위 오류 목록"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
         then(accountService).shouldHaveNoInteractions();
     }
@@ -205,7 +280,21 @@ class AccountAdminControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("AU006"))
-                .andDo(document("admin-change-account-status-forbidden"));
+                .andDo(document("admin-change-account-status-forbidden",
+                        requestFields(
+                                fieldWithPath("action").description("상태 변경 작업(LOCK, UNLOCK, DEACTIVATE, REACTIVATE)"),
+                                fieldWithPath("reason").description("상태 변경 사유")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("응답 데이터"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("error.code").description("오류 코드"),
+                                fieldWithPath("error.message").description("오류 메시지"),
+                                fieldWithPath("error.fieldErrors").description("필드 단위 오류 목록"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
 
         then(accountService).should().findAccount(user.getUuid());
         then(accountService).shouldHaveNoMoreInteractions();

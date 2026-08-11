@@ -1,0 +1,161 @@
+== 관리자 API
+
+=== 회원 목록 조회
+
+관리자 권한으로 전체 회원 목록을 조회합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/admin-list-accounts/http-request.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/admin-list-accounts/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/admin-list-accounts/response-fields.adoc[]
+
+==== 탈퇴 회원 개인정보 비노출
+
+탈퇴한 회원을 조회할 때 이름, 이메일과 같은 개인정보를 응답에 포함하지 않습니다.
+
+===== Request
+
+====== HTTP Request
+
+include::{snippets}/admin-list-withdrawn-accounts/http-request.adoc[]
+
+===== Response
+
+====== HTTP Response
+
+include::{snippets}/admin-list-withdrawn-accounts/http-response.adoc[]
+
+====== Response Fields
+
+include::{snippets}/admin-list-withdrawn-accounts/response-fields.adoc[]
+
+=== 회원 상태 변경
+
+관리자가 특정 회원의 상태를 잠금 또는 활성 상태로 변경합니다. 상태 변경 사유를 함께 기록합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/admin-change-account-status/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/admin-change-account-status/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/admin-change-account-status/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/admin-change-account-status/response-fields.adoc[]
+
+==== 상태 변경 사유 검증 실패
+
+상태 변경 사유가 비어 있으면 요청을 거부합니다.
+
+===== Request
+
+====== HTTP Request
+
+include::{snippets}/admin-change-account-status-validation-error/http-request.adoc[]
+
+====== Request Fields
+
+include::{snippets}/admin-change-account-status-validation-error/request-fields.adoc[]
+
+===== Response
+
+====== HTTP Response
+
+include::{snippets}/admin-change-account-status-validation-error/http-response.adoc[]
+
+====== Response Fields
+
+include::{snippets}/admin-change-account-status-validation-error/response-fields.adoc[]
+
+==== 관리자 권한 없음
+
+일반 회원이 관리자 API를 호출하면 접근을 거부합니다.
+
+===== Request
+
+====== HTTP Request
+
+include::{snippets}/admin-change-account-status-forbidden/http-request.adoc[]
+
+====== Request Fields
+
+include::{snippets}/admin-change-account-status-forbidden/request-fields.adoc[]
+
+===== Response
+
+====== HTTP Response
+
+include::{snippets}/admin-change-account-status-forbidden/http-response.adoc[]
+
+====== Response Fields
+
+include::{snippets}/admin-change-account-status-forbidden/response-fields.adoc[]
+
+=== 회원 이름 변경
+
+관리자가 특정 회원의 이름을 변경합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/admin-update-account-name/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/admin-update-account-name/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/admin-update-account-name/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/admin-update-account-name/response-fields.adoc[]
+
+=== 회원 비밀번호 변경
+
+관리자가 특정 회원의 비밀번호를 변경합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/admin-update-account-password/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/admin-update-account-password/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/admin-update-account-password/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/admin-update-account-password/response-fields.adoc[]

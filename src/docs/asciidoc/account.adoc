@@ -1,0 +1,237 @@
+== 회원 API
+
+=== 회원 가입
+
+새로운 회원을 생성합니다. 가입이 완료되면 회원은 일반 사용자 권한으로 등록됩니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/create-account/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/create-account/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/create-account/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/create-account/response-fields.adoc[]
+
+=== 내 정보 조회
+
+현재 인증된 회원의 공개 프로필 정보를 조회합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/get-current-account/http-request.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/get-current-account/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/get-current-account/response-fields.adoc[]
+
+=== 이름 변경
+
+현재 인증된 회원의 이름을 변경합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/update-account-name/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/update-account-name/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/update-account-name/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/update-account-name/response-fields.adoc[]
+
+=== 비밀번호 변경
+
+현재 인증된 회원의 비밀번호를 변경합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/update-account-password/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/update-account-password/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/update-account-password/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/update-account-password/response-fields.adoc[]
+
+=== 회원 탈퇴
+
+현재 인증된 회원의 탈퇴를 처리합니다. 탈퇴한 회원의 개인정보는 이후 조회 결과에 노출되지 않습니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/withdraw-account/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/withdraw-account/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/withdraw-account/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/withdraw-account/response-fields.adoc[]
+
+=== 이메일 사용 가능 여부 확인
+
+회원 가입 또는 이메일 변경 전에 이메일이 사용 가능한지 확인합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/check-email-availability/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/check-email-availability/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/check-email-availability/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/check-email-availability/response-fields.adoc[]
+
+=== 비밀번호 재사용 여부 확인
+
+새 비밀번호가 현재 비밀번호와 동일한지 확인합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/check-password-availability/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/check-password-availability/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/check-password-availability/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/check-password-availability/response-fields.adoc[]
+
+=== 비밀번호 초기화 토큰 발급
+
+회원 이메일을 확인한 뒤 비밀번호 초기화에 사용할 토큰을 발급하고 이메일로 전송합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/issue-password-reset-token/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/issue-password-reset-token/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/issue-password-reset-token/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/issue-password-reset-token/response-fields.adoc[]
+
+=== 비밀번호 초기화
+
+유효한 초기화 토큰을 사용해 회원의 비밀번호를 변경합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/reset-password/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/reset-password/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/reset-password/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/reset-password/response-fields.adoc[]
+
+==== 유효하지 않은 토큰
+
+유효하지 않은 비밀번호 초기화 토큰으로 요청하면 변경을 거부합니다.
+
+===== Request
+
+====== HTTP Request
+
+include::{snippets}/reset-password-invalid-token/http-request.adoc[]
+
+====== Request Fields
+
+include::{snippets}/reset-password-invalid-token/request-fields.adoc[]
+
+===== Response
+
+====== HTTP Response
+
+include::{snippets}/reset-password-invalid-token/http-response.adoc[]
+
+====== Response Fields
+
+include::{snippets}/reset-password-invalid-token/response-fields.adoc[]
