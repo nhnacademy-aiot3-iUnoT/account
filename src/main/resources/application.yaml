@@ -1,6 +1,8 @@
 spring:
   application:
     name: account
+  profiles:
+    default: dev
   jpa:
     open-in-view: false
   mail:
@@ -45,6 +47,7 @@ security:
     issued-audiences:
       - account-api
       - inventory-api
+      - rule-engine
     access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:30m}
     key-id: ${JWT_KEY_ID:account-key-001}
     audiences:

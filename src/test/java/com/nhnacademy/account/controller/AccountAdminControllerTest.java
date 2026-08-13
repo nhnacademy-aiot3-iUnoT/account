@@ -24,12 +24,14 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -72,10 +74,12 @@ class AccountAdminControllerTest {
     @Test
     @DisplayName("GET - 전체 회원 조회")
     void viewAllAccounts() throws Exception {
-        Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
-        Account user = new Account("test", "test@test.com", "hashed", AccountRole.USER);
+        Account admin = persistedAccount("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
+        Account user = persistedAccount("test", "test@test.com", "hashed", AccountRole.USER);
+        Account withdrawnUser = persistedAccount("withdrawn", "withdrawn@test.com", "hashed", AccountRole.USER);
+        withdrawnUser.withdraw();
 
-        List<Account> accountList = List.of(user);
+        List<Account> accountList = List.of(user, withdrawnUser);
 
         given(accountService.findAccount(admin.getUuid()))
                 .willReturn(admin);
@@ -91,6 +95,11 @@ class AccountAdminControllerTest {
                 .andExpect(jsonPath("$.data[0].email").value("test@test.com"))
                 .andExpect(jsonPath("$.data[0].accountRole").value("USER"))
                 .andExpect(jsonPath("$.data[0].accountStatus").value("ACTIVE"))
+                .andExpect(jsonPath("$.data[0].withdrawnAt").value(nullValue()))
+                .andExpect(jsonPath("$.data[1].name").value(nullValue()))
+                .andExpect(jsonPath("$.data[1].email").value(nullValue()))
+                .andExpect(jsonPath("$.data[1].accountStatus").value("WITHDRAWN"))
+                .andExpect(jsonPath("$.data[1].withdrawnAt").exists())
                 .andExpect(jsonPath("$.data[0].id").doesNotExist())
                 .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist())
                 .andDo(document("admin-list-accounts",
@@ -98,10 +107,13 @@ class AccountAdminControllerTest {
                                 fieldWithPath("success").description("요청 성공 여부"),
                                 fieldWithPath("data").description("회원 목록"),
                                 fieldWithPath("data[].uuid").description("회원 UUID"),
-                                fieldWithPath("data[].name").description("회원 이름"),
-                                fieldWithPath("data[].email").description("회원 이메일"),
+                                fieldWithPath("data[].name").optional().description("회원 이름(탈퇴 시 null)"),
+                                fieldWithPath("data[].email").optional().description("회원 이메일(탈퇴 시 null)"),
                                 fieldWithPath("data[].accountRole").description("회원 권한"),
                                 fieldWithPath("data[].accountStatus").description("회원 상태"),
+                                fieldWithPath("data[].createdAt").description("회원 생성 시각"),
+                                fieldWithPath("data[].updatedAt").description("회원 수정 시각"),
+                                fieldWithPath("data[].withdrawnAt").optional().description("회원 탈퇴 시각(미탈퇴 시 null)"),
                                 fieldWithPath("error").description("오류 정보"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
                         )
@@ -115,8 +127,8 @@ class AccountAdminControllerTest {
         UUID uuid = UUID.randomUUID();
         ChangeAccountStatusRequest request =
                 new ChangeAccountStatusRequest(AccountStatusAction.LOCK, "이상 로그인 감지");
-        Account account = new Account("test", "test@test.com", "hashed");
-        Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
+        Account account = persistedAccount("test", "test@test.com", "hashed", AccountRole.USER);
+        Account admin = persistedAccount("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
         account.lock();
 
         given(accountService.findAccount(admin.getUuid()))
@@ -144,6 +156,9 @@ class AccountAdminControllerTest {
                                 fieldWithPath("data.email").description("회원 이메일"),
                                 fieldWithPath("data.accountRole").description("회원 권한"),
                                 fieldWithPath("data.accountStatus").description("변경된 회원 상태"),
+                                fieldWithPath("data.createdAt").description("회원 생성 시각"),
+                                fieldWithPath("data.updatedAt").description("회원 수정 시각"),
+                                fieldWithPath("data.withdrawnAt").description("회원 탈퇴 시각(미탈퇴 시 null)"),
                                 fieldWithPath("error").description("오류 정보"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
                         )
@@ -157,8 +172,8 @@ class AccountAdminControllerTest {
     void updateAccountName() throws Exception {
         UUID uuid = UUID.randomUUID();
         UpdateAccountNameRequest request = new UpdateAccountNameRequest("updated");
-        Account account = new Account("test", "test@test.com", "hashed");
-        Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
+        Account account = persistedAccount("test", "test@test.com", "hashed", AccountRole.USER);
+        Account admin = persistedAccount("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
 
         given(accountService.findAccount(admin.getUuid()))
                 .willReturn(admin);
@@ -183,6 +198,9 @@ class AccountAdminControllerTest {
                                 fieldWithPath("data.email").description("회원 이메일"),
                                 fieldWithPath("data.accountRole").description("회원 권한"),
                                 fieldWithPath("data.accountStatus").description("회원 상태"),
+                                fieldWithPath("data.createdAt").description("회원 생성 시각"),
+                                fieldWithPath("data.updatedAt").description("회원 수정 시각"),
+                                fieldWithPath("data.withdrawnAt").description("회원 탈퇴 시각(미탈퇴 시 null)"),
                                 fieldWithPath("error").description("오류 정보"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
                         )
@@ -196,8 +214,8 @@ class AccountAdminControllerTest {
     void updateAccountPassword() throws Exception {
         UUID uuid = UUID.randomUUID();
         UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
-        Account account = new Account("test", "test@test.com", "hashed");
-        Account admin = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
+        Account account = persistedAccount("test", "test@test.com", "hashed", AccountRole.USER);
+        Account admin = persistedAccount("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
 
         given(accountService.findAccount(admin.getUuid()))
                 .willReturn(admin);
@@ -222,6 +240,9 @@ class AccountAdminControllerTest {
                                 fieldWithPath("data.email").description("회원 이메일"),
                                 fieldWithPath("data.accountRole").description("회원 권한"),
                                 fieldWithPath("data.accountStatus").description("회원 상태"),
+                                fieldWithPath("data.createdAt").description("회원 생성 시각"),
+                                fieldWithPath("data.updatedAt").description("회원 수정 시각"),
+                                fieldWithPath("data.withdrawnAt").description("회원 탈퇴 시각(미탈퇴 시 null)"),
                                 fieldWithPath("error").description("오류 정보"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
                         )
@@ -308,5 +329,18 @@ class AccountAdminControllerTest {
         JwtAuthenticationToken authentication = new JwtAuthenticationToken(jwt);
         authentication.setAuthenticated(true);
         SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    private Account persistedAccount(
+            String name,
+            String email,
+            String hashedPassword,
+            AccountRole role
+    ) {
+        Account account = new Account(name, email, hashedPassword, role);
+        LocalDateTime persistedAt = LocalDateTime.of(2026, 8, 13, 12, 0);
+        ReflectionTestUtils.setField(account, "createdAt", persistedAt);
+        ReflectionTestUtils.setField(account, "updatedAt", persistedAt);
+        return account;
     }
 }
