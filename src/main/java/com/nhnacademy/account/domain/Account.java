@@ -15,7 +15,19 @@ import java.util.UUID;
 
 @Entity
 @Getter
-@Table(name = "account")
+@Table(
+        name = "accounts",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_account_uuid",
+                        columnNames = "uuid"
+                ),
+                @UniqueConstraint(
+                        name = "uk_account_email",
+                        columnNames = "email"
+                )
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Account {
 
@@ -31,7 +43,6 @@ public class Account {
     @Column(
             name = "uuid",
             nullable = false,
-            unique = true,
             updatable = false,
             columnDefinition = "BINARY(16)"
     )
@@ -39,8 +50,7 @@ public class Account {
 
     @Column(
             name = "email",
-            unique = true,
-            nullable = false,
+            nullable = true,
             length = 255
     )
     private String email;
@@ -59,6 +69,7 @@ public class Account {
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(
             name = "account_status",
             nullable = false,
@@ -67,6 +78,7 @@ public class Account {
     private AccountStatus accountStatus;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(
             name = "account_role",
             nullable = false,
@@ -231,6 +243,8 @@ public class Account {
 
         this.accountStatus = AccountStatus.WITHDRAWN;
         this.withdrawnAt = now;
+        this.email = null;
+        this.hashedPassword = null;
 
     }
 

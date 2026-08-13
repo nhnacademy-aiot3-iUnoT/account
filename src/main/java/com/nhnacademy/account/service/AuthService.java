@@ -38,7 +38,7 @@ public class AuthService {
         }
 
 
-        String token = jwtProvider.createAccessToken(account.getUuid());
+        String token = jwtProvider.createAccessToken(account.getUuid(), account.getAccountRole());
         return new LoginResponse(token);
     }
 }

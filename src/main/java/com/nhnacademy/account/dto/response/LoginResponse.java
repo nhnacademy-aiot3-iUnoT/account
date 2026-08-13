@@ -7,5 +7,5 @@ public record LoginResponse(
 
     @NotBlank
     @Size(max = 256)
-     String accessToken
+    String accessToken
 ){ }

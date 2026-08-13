@@ -22,7 +22,7 @@ include::{snippets}/admin-list-accounts/response-fields.adoc[]
 
 ==== 탈퇴 회원 개인정보 비노출
 
-탈퇴한 회원을 조회할 때 이름, 이메일과 같은 개인정보를 응답에 포함하지 않습니다.
+탈퇴한 회원을 조회할 때 이름과 이메일 값은 `null`로 반환하여 개인정보를 노출하지 않습니다.
 
 ===== Request
 
