@@ -29,7 +29,7 @@ public class JwtProvider {
 
         JwsHeader header = JwsHeader
                 .with(SignatureAlgorithm.RS256)
-                .type("at-jwt")
+                .type("JWT")
                 .keyId(properties.getKeyId())
                 .build();
 
