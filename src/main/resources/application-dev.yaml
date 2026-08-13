@@ -22,9 +22,3 @@ nhn:
 spring:
   config:
     import: optional:file:./.env[.properties]
-
-management:
-  tracing:
-    export:
-      zipkin:
-        enabled: false

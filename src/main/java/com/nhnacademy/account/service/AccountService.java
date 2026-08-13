@@ -9,12 +9,6 @@ import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
-import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
-import com.nhnacademy.account.dto.request.CreateAccountRequest;
-import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
-import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountRequest;
-import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.global.error.exception.ConflictException;
@@ -49,7 +43,6 @@ public class AccountService {
         try {
             return accountRepository.save(account);
         } catch (DataIntegrityViolationException e) {
-            // TODO DB 예외
             throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
@@ -67,7 +60,6 @@ public class AccountService {
         try {
             return accountRepository.save(account);
         } catch (DataIntegrityViolationException e) {
-            // TODO DB 예외
             throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
     }
