@@ -1,6 +1,5 @@
 package com.nhnacademy.account.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
 import com.nhnacademy.account.domain.AccountStatus;
@@ -8,7 +7,6 @@ import com.nhnacademy.account.domain.AccountStatus;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record AccountResponse(
         UUID uuid,
         String name,
