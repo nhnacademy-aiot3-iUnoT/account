@@ -75,4 +75,22 @@ public class AccountRepositoryTest {
         assertThat(accountRepository.existsByEmail("missing@example.com"))
                 .isFalse();
     }
+
+    @Test
+    @DisplayName("탈퇴 계정의 이메일과 비밀번호 해시는 null로 저장한다")
+    void withdrawnAccountCanPersistNullCredentials() {
+        Account account = new Account("tester", "tester@example.com", "hashed-password");
+        accountRepository.saveAndFlush(account);
+
+        account.withdraw();
+        accountRepository.flush();
+        entityManager.clear();
+
+        Account withdrawnAccount = accountRepository.findByUuid(account.getUuid())
+                .orElseThrow();
+
+        assertThat(withdrawnAccount.getEmail()).isNull();
+        assertThat(withdrawnAccount.getHashedPassword()).isNull();
+        assertThat(withdrawnAccount.isWithdrawn()).isTrue();
+    }
 }

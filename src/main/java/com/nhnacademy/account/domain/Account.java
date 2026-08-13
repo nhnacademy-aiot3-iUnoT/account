@@ -50,7 +50,7 @@ public class Account {
 
     @Column(
             name = "email",
-            nullable = false,
+            nullable = true,
             length = 255
     )
     private String email;
@@ -243,6 +243,8 @@ public class Account {
 
         this.accountStatus = AccountStatus.WITHDRAWN;
         this.withdrawnAt = now;
+        this.email = null;
+        this.hashedPassword = null;
 
     }
 

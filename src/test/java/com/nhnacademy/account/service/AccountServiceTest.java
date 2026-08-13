@@ -285,8 +285,7 @@ class AccountServiceTest {
         then(passwordEncoder).should().encode(request.password());
     }
 
-
-
+    @Test
     void withdrawAccount() {
         WithdrawAccountRequest request = new WithdrawAccountRequest("password");
         UUID uuid = UUID.randomUUID();
@@ -299,9 +298,9 @@ class AccountServiceTest {
 
         accountService.withdrawAccount(uuid, request);
 
-        assertNull(account.getName());
         assertNull(account.getEmail());
         assertNull(account.getHashedPassword());
+        assertEquals("test", account.getName());
     }
 
     @Test
@@ -321,6 +320,8 @@ class AccountServiceTest {
         );
 
         assertEquals(ErrorCode.PASSWORD_MISMATCH, exception.getErrorCode());
+        assertEquals("test@test.com", account.getEmail());
+        assertEquals("hashed", account.getHashedPassword());
     }
 
     @Test
