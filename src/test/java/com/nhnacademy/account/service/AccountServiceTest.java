@@ -9,7 +9,6 @@ import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
-import com.nhnacademy.account.dto.response.AccountResponse;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.global.error.exception.ConflictException;
