@@ -1,0 +1,25 @@
+== 인증 API
+
+=== 로그인
+
+등록된 이메일과 비밀번호를 검증하고 인증에 사용할 액세스 토큰을 발급합니다.
+
+==== Request
+
+===== HTTP Request
+
+include::{snippets}/login/http-request.adoc[]
+
+===== Request Fields
+
+include::{snippets}/login/request-fields.adoc[]
+
+==== Response
+
+===== HTTP Response
+
+include::{snippets}/login/http-response.adoc[]
+
+===== Response Fields
+
+include::{snippets}/login/response-fields.adoc[]

@@ -2,16 +2,19 @@ package com.nhnacademy.account.controller;
 
 import com.nhnacademy.account.dto.request.*;
 import com.nhnacademy.account.global.error.ErrorCode;
-import com.nhnacademy.account.global.error.exception.ForbiddenException;
 import com.nhnacademy.account.global.error.exception.NotFoundException;
-import com.nhnacademy.account.global.error.exception.UnauthorizedException;
 import com.nhnacademy.account.security.AccountUUID;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.dto.response.AccountResponse;
 import com.nhnacademy.account.dto.response.EmailAvailabilityResponse;
 import com.nhnacademy.account.dto.response.PasswordReuseCheckResponse;
+import com.nhnacademy.account.dto.request.CreateAccountRequest;
+import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
+import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
+import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.service.AccountService;
 import com.nhnacademy.account.global.util.ApiResponse;
+import com.nhnacademy.account.service.EmailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,10 +23,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.security.auth.login.AccountNotFoundException;
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.HexFormat;
 import java.util.UUID;
 

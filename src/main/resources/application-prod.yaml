@@ -10,6 +10,10 @@ logging:
     com.nhnacademy.account: INFO
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health, service-registry, prometheus
   tracing:
     export:
       zipkin:
@@ -22,7 +26,7 @@ security:
       - account-api
     allowed-algorithms:
       - rs256
-    private-key-path: ${JWT_PRIVATE_KEY_PATH}
+    private-key-path: ${JWT_PRIVATE_KEY_PATH:/var/lib/account/keys/jwt-private.pem}
 
 nhn:
   server-host: https://iunot.cloud
