@@ -10,9 +10,13 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/auth")
 public class JwkSetController {
     private final JWKSet jwkSet;
+
+    @GetMapping("/api/auth/.well-known/jwks.json")
+    public Map<String, Object> jwkSetTemp() {
+        return jwkSet.toJSONObject(true);
+    }
 
     @GetMapping("/.well-known/jwks.json")
     public Map<String, Object> jwkSet() {
