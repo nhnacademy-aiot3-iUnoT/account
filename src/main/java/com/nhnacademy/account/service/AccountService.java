@@ -77,7 +77,6 @@ public class AccountService {
         try {
             return accountRepository.save(account);
         } catch (DataIntegrityViolationException e) {
-            // TODO DB 예외
             throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
     }

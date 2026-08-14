@@ -33,12 +33,15 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -91,8 +94,8 @@ class AccountControllerTest {
         given(redisTemplate.opsForValue()).willReturn(valueOperations);
 
         accountList = List.of(
-                new Account("test", "test@test.com", "hashed"),
-                new Account("test2", "test2@test2.com", "hashed2")
+                persistedAccount("test", "test@test.com", "hashed"),
+                persistedAccount("test2", "test2@test2.com", "hashed2")
         );
     }
 
@@ -190,16 +193,20 @@ class AccountControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].uuid").value(withdrawnAccount.getUuid().toString()))
                 .andExpect(jsonPath("$.data[0].accountStatus").value("WITHDRAWN"))
-                .andExpect(jsonPath("$.data[0].name").doesNotExist())
-                .andExpect(jsonPath("$.data[0].email").doesNotExist())
+                .andExpect(jsonPath("$.data[0].name").value(nullValue()))
+                .andExpect(jsonPath("$.data[0].email").value(nullValue()))
                 .andExpect(jsonPath("$.data[0].hashedPassword").doesNotExist())
                 .andDo(document("admin-list-withdrawn-accounts",
                         responseFields(
                                 fieldWithPath("success").description("요청 성공 여부"),
                                 fieldWithPath("data").description("탈퇴 회원 목록"),
                                 fieldWithPath("data[].uuid").description("회원 UUID"),
+                                fieldWithPath("data[].name").description("회원 이름(탈퇴 시 null)"),
+                                fieldWithPath("data[].email").description("회원 이메일(탈퇴 시 null)"),
                                 fieldWithPath("data[].accountRole").description("회원 권한"),
                                 fieldWithPath("data[].accountStatus").description("회원 상태"),
+                                fieldWithPath("data[].createdAt").description("회원 생성 시각"),
+                                fieldWithPath("data[].updatedAt").description("회원 수정 시각"),
                                 fieldWithPath("data[].withdrawnAt").description("회원 탈퇴 시각"),
                                 fieldWithPath("error").description("오류 정보"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
@@ -220,6 +227,9 @@ class AccountControllerTest {
         mockMvc.perform(get("/api/accounts/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.uuid").value(accountList.getFirst().getUuid().toString()))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.updatedAt").exists())
+                .andExpect(jsonPath("$.data.withdrawnAt").value(nullValue()))
                 .andExpect(jsonPath("$.data.id").doesNotExist())
                 .andExpect(jsonPath("$.data.hashedPassword").doesNotExist())
                 .andDo(document("get-current-account",
@@ -231,6 +241,9 @@ class AccountControllerTest {
                                 fieldWithPath("data.email").description("회원 이메일"),
                                 fieldWithPath("data.accountRole").description("회원 권한"),
                                 fieldWithPath("data.accountStatus").description("회원 상태"),
+                                fieldWithPath("data.createdAt").description("회원 생성 시각"),
+                                fieldWithPath("data.updatedAt").description("회원 수정 시각"),
+                                fieldWithPath("data.withdrawnAt").description("회원 탈퇴 시각(미탈퇴 시 null)"),
                                 fieldWithPath("error").description("오류 정보"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
                         )
@@ -267,6 +280,9 @@ class AccountControllerTest {
                                 fieldWithPath("data.email").description("회원 이메일"),
                                 fieldWithPath("data.accountRole").description("회원 권한"),
                                 fieldWithPath("data.accountStatus").description("회원 상태"),
+                                fieldWithPath("data.createdAt").description("회원 생성 시각"),
+                                fieldWithPath("data.updatedAt").description("회원 수정 시각"),
+                                fieldWithPath("data.withdrawnAt").description("회원 탈퇴 시각(미탈퇴 시 null)"),
                                 fieldWithPath("error").description("오류 정보"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
                         )
@@ -303,12 +319,23 @@ class AccountControllerTest {
                                 fieldWithPath("data.email").description("회원 이메일"),
                                 fieldWithPath("data.accountRole").description("회원 권한"),
                                 fieldWithPath("data.accountStatus").description("회원 상태"),
+                                fieldWithPath("data.createdAt").description("회원 생성 시각"),
+                                fieldWithPath("data.updatedAt").description("회원 수정 시각"),
+                                fieldWithPath("data.withdrawnAt").description("회원 탈퇴 시각(미탈퇴 시 null)"),
                                 fieldWithPath("error").description("오류 정보"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
                         )
                 ));
 
         then(accountService).should().updateAccountPassword(account.getUuid(), request);
+    }
+
+    private Account persistedAccount(String name, String email, String hashedPassword) {
+        Account account = new Account(name, email, hashedPassword);
+        LocalDateTime persistedAt = LocalDateTime.of(2026, 8, 13, 12, 0);
+        ReflectionTestUtils.setField(account, "createdAt", persistedAt);
+        ReflectionTestUtils.setField(account, "updatedAt", persistedAt);
+        return account;
     }
 
     @Test

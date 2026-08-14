@@ -14,6 +14,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /var/lib/account/keys \
+    && chown -R 1000:1000 /var/lib/account
+
 COPY --from=build /app/target/*.jar app.jar
 
 USER 1000
