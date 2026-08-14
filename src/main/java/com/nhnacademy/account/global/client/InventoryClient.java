@@ -45,6 +45,15 @@ public class InventoryClient {
                         .body(responseTypeOf(dataType)));
     }
 
+    public void post(String path, Object body) {
+        executeVoid(() ->
+                restClient.post()
+                        .uri(baseUrl + path)
+                        .body(body)
+                        .retrieve()
+                        .toBodilessEntity());
+    }
+
     private <T> T execute(Supplier<ApiResponse<T>> supplier) {
         try {
             ApiResponse<T> response = supplier.get();
@@ -61,6 +70,24 @@ public class InventoryClient {
 
             return response.data();
 
+        } catch (HttpStatusCodeException e) {
+            throw convertApiException(e);
+        } catch (ResourceAccessException e) {
+            throw new UpstreamServiceException(
+                    "Inventory 서비스에 연결할 수 없습니다.",
+                    e
+            );
+        } catch (RestClientException e) {
+            throw new UpstreamServiceException(
+                    ErrorCode.UPSTREAM_SERVICE_ERROR.getMessage(),
+                    e
+            );
+        }
+    }
+
+    private void executeVoid(Runnable request) {
+        try {
+            request.run();
         } catch (HttpStatusCodeException e) {
             throw convertApiException(e);
         } catch (ResourceAccessException e) {

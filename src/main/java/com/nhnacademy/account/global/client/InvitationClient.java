@@ -11,11 +11,11 @@ public class InvitationClient {
     private static final String INVITATION_SERVICE = "/api/core/internal/invitations";
     private final InventoryClient inventoryClient;
 
-    public Void signup(InvitationsSignupRequest invitationsSignupRequest) {
-        return inventoryClient.post(INVITATION_SERVICE + "/use", invitationsSignupRequest, Void.class);
+    public void signup(InvitationsSignupRequest invitationsSignupRequest) {
+        inventoryClient.post(INVITATION_SERVICE + "/use", invitationsSignupRequest);
     }
 
-    public Void compensate(SignupCompensateRequest request) {
-        return inventoryClient.post(INVITATION_SERVICE + "/compensate", request, Void.class);
+    public void compensate(SignupCompensateRequest request) {
+        inventoryClient.post(INVITATION_SERVICE + "/compensate", request);
     }
 }
