@@ -36,8 +36,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -177,6 +176,44 @@ class AccountServiceTest {
     }
 
     @Test
+    void createAccountCompensatesInvitationsFail() {
+        UUID inviteToken = UUID.randomUUID();
+        CreateAccountRequest request = new CreateAccountRequest(
+                inviteToken,
+                "test",
+                "test@test.com",
+                "hashed"
+        );
+        SignupCompensateRequest compensateRequest = new SignupCompensateRequest(inviteToken, UUID.randomUUID());
+
+        DataIntegrityViolationException saveException =
+                new DataIntegrityViolationException("duplicate email");
+        UpstreamServiceException compensateException =
+                new UpstreamServiceException("compensation failed");
+
+
+        given(accountRepository.existsByEmail(request.email()))
+                .willReturn(false);
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("hashed");
+        given(accountRepository.saveAndFlush(any(Account.class)))
+                .willThrow(saveException);
+
+        willThrow(compensateException)
+                .given(invitationClient)
+                .compensate(any(SignupCompensateRequest.class));
+
+        DataIntegrityViolationException result = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> accountService.createAccount(request)
+        );
+
+        assertSame(saveException, result);
+        assertEquals(1, result.getSuppressed().length);
+        assertSame(compensateException, result.getSuppressed()[0]);
+    }
+
+    @Test
     void createAccountDoesNotSaveWhenInvitationFails() {
         CreateAccountRequest request = new CreateAccountRequest(
                 UUID.randomUUID(),
@@ -191,8 +228,9 @@ class AccountServiceTest {
                 .willReturn(false);
         given(passwordEncoder.encode(request.password()))
                 .willReturn("hashed");
-        given(invitationClient.signup(any()))
-                .willThrow(invitationException);
+        willThrow(invitationException)
+                .given(invitationClient)
+                .signup(any());
 
         UpstreamServiceException result = assertThrows(
                 UpstreamServiceException.class,
