@@ -2,6 +2,7 @@
 @email = test@test.com
 @password = testpass
 @newPassword = changedpass
+@inviteToken = 00000000-0000-0000-0000-000000000001
 
 ### JWK 공개 키 조회
 GET {{baseUrl}}/.well-known/jwks.json
@@ -12,6 +13,7 @@ POST {{baseUrl}}/api/accounts
 Content-Type: application/json
 
 {
+  "inviteToken": "{{inviteToken}}",
   "name": "test",
   "email": "{{email}}",
   "password": "{{password}}"

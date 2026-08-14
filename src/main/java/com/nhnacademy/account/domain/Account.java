@@ -1,5 +1,6 @@
 package com.nhnacademy.account.domain;
 
+import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.global.error.exception.ConflictException;
@@ -50,7 +51,7 @@ public class Account {
 
     @Column(
             name = "email",
-            nullable = true,
+            unique = true,
             length = 255
     )
     private String email;

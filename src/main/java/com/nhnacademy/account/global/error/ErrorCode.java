@@ -27,6 +27,12 @@ public enum ErrorCode {
             "서버 내부 오류가 발생했습니다."
     ),
 
+    UPSTREAM_SERVICE_ERROR(
+            HttpStatus.BAD_GATEWAY,
+            "G004",
+            "외부 서비스 호출 중 오류가 발생했습니다."
+    ),
+
     // Account
     ACCOUNT_NOT_FOUND(
             HttpStatus.NOT_FOUND,

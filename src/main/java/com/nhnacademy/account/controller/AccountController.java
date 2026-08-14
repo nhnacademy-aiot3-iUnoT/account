@@ -1,6 +1,7 @@
 package com.nhnacademy.account.controller;
 
 import com.nhnacademy.account.dto.request.*;
+import com.nhnacademy.account.dto.response.CreateAccountResponse;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.NotFoundException;
 import com.nhnacademy.account.security.AccountUUID;
@@ -44,10 +45,11 @@ public class AccountController {
     public ResponseEntity<ApiResponse<?>> createAccount(
             @Valid @RequestBody CreateAccountRequest request
     ) {
-        Account account = accountService.createAccount(request);
+        CreateAccountResponse response = accountService.createAccount(request);
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.ok());
+                .body(ApiResponse.success(response));
     }
 
     @GetMapping("/me")

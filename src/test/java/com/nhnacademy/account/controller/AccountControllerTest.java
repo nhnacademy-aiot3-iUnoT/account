@@ -10,6 +10,7 @@ import com.nhnacademy.account.dto.request.ResetPasswordTokenRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.response.CreateAccountResponse;
 import com.nhnacademy.account.service.AccountService;
 import com.nhnacademy.account.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
@@ -108,11 +109,11 @@ class AccountControllerTest {
     @DisplayName("POST - 회원가입")
     void createAccount() throws Exception {
         CreateAccountRequest request = new CreateAccountRequest(
-                "test", "test@test.com", "hashed"
+                UUID.randomUUID(), "test", "test@test.com", "hashed"
         );
 
         given(accountService.createAccount(any(CreateAccountRequest.class)))
-                .willReturn(accountList.getFirst());
+                .willReturn(new CreateAccountResponse(true));
 
         mockMvc.perform(post("/api/accounts")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -120,6 +121,42 @@ class AccountControllerTest {
                 .andExpect(status().isCreated())
                 .andDo(document("create-account",
                         requestFields(
+                                fieldWithPath("inviteToken").description("초대 토큰"),
+                                fieldWithPath("name").description("회원 이름"),
+                                fieldWithPath("email").description("회원 이메일"),
+                                fieldWithPath("password").description("회원 비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("응답 데이터"),
+                                fieldWithPath("data.isOwner").description("초대 대상 공간의 소유자 여부"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.isOwner").value(true));
+    }
+
+    @Test
+    void createAccountRejectsMalformedInviteToken() throws Exception {
+        mockMvc.perform(post("/api/accounts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "inviteToken": "inviteToken",
+                                  "name": "test",
+                                  "email": "test@test.com",
+                                  "password": "password"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("G001"))
+                .andDo(document("create-account-invalid-invite-token",
+                        requestFields(
+                                fieldWithPath("inviteToken").description("유효하지 않은 형식의 초대 토큰"),
                                 fieldWithPath("name").description("회원 이름"),
                                 fieldWithPath("email").description("회원 이메일"),
                                 fieldWithPath("password").description("회원 비밀번호")
@@ -128,9 +165,14 @@ class AccountControllerTest {
                                 fieldWithPath("success").description("요청 성공 여부"),
                                 fieldWithPath("data").description("응답 데이터"),
                                 fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("error.code").description("오류 코드"),
+                                fieldWithPath("error.message").description("오류 메시지"),
+                                fieldWithPath("error.fieldErrors").description("필드 단위 오류 목록"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
                         )
                 ));
+
+        then(accountService).shouldHaveNoInteractions();
     }
 
     @Test

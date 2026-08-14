@@ -4,6 +4,7 @@ import com.nhnacademy.account.global.error.exception.BaseException;
 import com.nhnacademy.account.global.util.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -75,6 +76,29 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(ApiResponse.error(errorCode.getCode(), errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<?>> handleUnreadableMessage(
+            HttpMessageNotReadableException exception,
+            HttpServletRequest request
+    ) {
+        ErrorCode errorCode = ErrorCode.INVALID_INPUT;
+
+        log.warn(
+                "event=message_not_readable exceptionType={} errorCode={} code={} "
+                        + "httpStatus={} method={} path={}",
+                exception.getClass().getSimpleName(),
+                errorCode.name(),
+                errorCode.getCode(),
+                errorCode.getStatus().value(),
+                request.getMethod(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(ApiResponse.error(errorCode));
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)

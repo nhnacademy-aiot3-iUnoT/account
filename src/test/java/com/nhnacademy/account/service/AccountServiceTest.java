@@ -3,24 +3,34 @@ package com.nhnacademy.account.service;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountStatusAction;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
+import com.nhnacademy.account.dto.request.InvitationsSignupRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
+import com.nhnacademy.account.dto.request.SignupCompensateRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.response.AccountResponse;
+import com.nhnacademy.account.dto.response.CreateAccountResponse;
+import com.nhnacademy.account.dto.response.InvitationsSignupResponse;
+import com.nhnacademy.account.global.client.InvitationClient;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.global.error.exception.ConflictException;
 import com.nhnacademy.account.global.error.exception.NotFoundException;
+import com.nhnacademy.account.global.error.exception.UpstreamServiceException;
 import com.nhnacademy.account.repository.AccountRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -42,6 +52,9 @@ class AccountServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private InvitationClient invitationClient;
+
     @InjectMocks
     private AccountService accountService;
 
@@ -59,7 +72,9 @@ class AccountServiceTest {
 
     @Test
     void createAccount() {
+        UUID inviteToken = UUID.randomUUID();
         CreateAccountRequest request = new CreateAccountRequest(
+                inviteToken,
                 "test",
                 "test@test.com",
                 "hashed"
@@ -72,12 +87,15 @@ class AccountServiceTest {
         given(passwordEncoder.encode(request.password()))
                 .willReturn("hashed");
 
-        given(accountRepository.save(any(Account.class)))
+        given(invitationClient.signup(any()))
+                .willReturn(new InvitationsSignupResponse(true));
+
+        given(accountRepository.saveAndFlush(any(Account.class)))
                 .willReturn(account);
 
-        Account result = accountService.createAccount(request);
+        CreateAccountResponse result = accountService.createAccount(request);
 
-        assertEquals(account, result);
+        assertTrue(result.isOwner());
 
         then(accountRepository)
                 .should()
@@ -85,12 +103,17 @@ class AccountServiceTest {
 
         then(accountRepository)
                 .should()
-                .save(any(Account.class));
+                .saveAndFlush(any(Account.class));
+
+        then(invitationClient)
+                .should()
+                .signup(any());
     }
 
     @Test
     void createAccountWithExistingEmail() {
         CreateAccountRequest request = new CreateAccountRequest(
+                UUID.randomUUID(),
                 "test",
                 "test@test.com",
                 "hashed"
@@ -109,11 +132,94 @@ class AccountServiceTest {
 
         assertEquals(ErrorCode.EMAIL_ALREADY_EXISTS, exception.getErrorCode());
 
+        then(invitationClient)
+                .shouldHaveNoInteractions();
+
+        then(accountRepository)
+                .should(never())
+                .saveAndFlush(any(Account.class));
+
+    }
+
+    @Test
+    void createAccountCompensatesInvitationWhenAccountSaveFails() {
+        UUID inviteToken = UUID.randomUUID();
+        CreateAccountRequest request = new CreateAccountRequest(
+                inviteToken,
+                "test",
+                "test@test.com",
+                "hashed"
+        );
+
+        given(accountRepository.existsByEmail(request.email()))
+                .willReturn(false);
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("hashed");
+        given(invitationClient.signup(any()))
+                .willReturn(new InvitationsSignupResponse(false));
+        given(accountRepository.saveAndFlush(any(Account.class)))
+                .willThrow(new DataIntegrityViolationException("duplicate email"));
+
+        assertThrows(
+                DataIntegrityViolationException.class,
+                () -> accountService.createAccount(request)
+        );
+
+        ArgumentCaptor<InvitationsSignupRequest> signupCaptor =
+                ArgumentCaptor.forClass(InvitationsSignupRequest.class);
+        ArgumentCaptor<SignupCompensateRequest> compensateCaptor =
+                ArgumentCaptor.forClass(SignupCompensateRequest.class);
+
+        then(invitationClient)
+                .should()
+                .signup(signupCaptor.capture());
+        then(invitationClient)
+                .should()
+                .compensate(compensateCaptor.capture());
+
+        assertEquals(inviteToken, compensateCaptor.getValue().token());
+        assertEquals(
+                signupCaptor.getValue().accountUuid(),
+                compensateCaptor.getValue().accountUuid()
+        );
+    }
+
+    @Test
+    void createAccountDoesNotSaveWhenInvitationFails() {
+        CreateAccountRequest request = new CreateAccountRequest(
+                UUID.randomUUID(),
+                "test",
+                "test@test.com",
+                "hashed"
+        );
+        UpstreamServiceException invitationException =
+                new UpstreamServiceException("invitation unavailable");
+
+        given(accountRepository.existsByEmail(request.email()))
+                .willReturn(false);
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("hashed");
+        given(invitationClient.signup(any()))
+                .willThrow(invitationException);
+
+        UpstreamServiceException result = assertThrows(
+                UpstreamServiceException.class,
+                () -> accountService.createAccount(request)
+        );
+
+        assertSame(invitationException, result);
+        then(accountRepository)
+                .should(never())
+                .saveAndFlush(any(Account.class));
+        then(invitationClient)
+                .should(never())
+                .compensate(any());
+
     }
 
     @Test
     void createAdminAccount() {
-        CreateAccountRequest request = new CreateAccountRequest(
+        CreateAdminAccountRequest request = new CreateAdminAccountRequest(
                 "test",
                 "test@test.com",
                 "hashed"
@@ -144,7 +250,7 @@ class AccountServiceTest {
 
     @Test
     void createAdminAccountWithExistingEmail() {
-        CreateAccountRequest request = new CreateAccountRequest(
+        CreateAdminAccountRequest request = new CreateAdminAccountRequest(
                 "test",
                 "test@test.com",
                 "hashed"
