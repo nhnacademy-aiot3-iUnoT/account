@@ -112,6 +112,9 @@ class AccountAdminControllerTest {
                                 fieldWithPath("data.email").description("관리자 이메일"),
                                 fieldWithPath("data.accountRole").description("관리자 권한"),
                                 fieldWithPath("data.accountStatus").description("관리자 상태"),
+                                fieldWithPath("data.createdAt").description("생성 시간"),
+                                fieldWithPath("data.updatedAt").description("최근 수정 시간"),
+                                fieldWithPath("data.withdrawnAt").description("탈퇴 날짜"),
                                 fieldWithPath("error").description("오류 정보"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
                         )
