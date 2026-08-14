@@ -2,13 +2,8 @@ package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
-import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
-import com.nhnacademy.account.dto.request.CreateAccountRequest;
-import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
-import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
-import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.request.*;
+import com.nhnacademy.account.global.client.InvitationClient;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.global.error.exception.ConflictException;
@@ -30,9 +25,10 @@ import java.util.UUID;
 public class AccountService {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final InvitationClient invitationClient;
 
     @Transactional
-    public Account createAccount(CreateAccountRequest request) {
+    public void createAccount(CreateAccountRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
         Account account = new Account(request.name(), request.email(), hashedPassword);
 
@@ -40,16 +36,33 @@ public class AccountService {
             throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        try {
-            return accountRepository.save(account);
-        } catch (DataIntegrityViolationException e) {
-            throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
-        }
+        InvitationsSignupRequest invitationRequest = new InvitationsSignupRequest(
+                request.inviteToken(),
+                request.email(),
+                account.getUuid()
+        );
+        invitationClient.signup(invitationRequest);
 
+        try {
+            accountRepository.saveAndFlush(account);
+        } catch (RuntimeException saveException) {
+            SignupCompensateRequest compensateRequest = new SignupCompensateRequest(
+                    request.inviteToken(),
+                    account.getUuid()
+            );
+
+            try {
+                invitationClient.compensate(compensateRequest);
+            } catch (RuntimeException compensateException) {
+                saveException.addSuppressed(compensateException);
+            }
+
+            throw saveException;
+        }
     }
 
     @Transactional
-    public Account createAdminAccount(CreateAccountRequest request) {
+    public Account createAdminAccount(CreateAdminAccountRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
         Account account = new Account(request.name(), request.email(), hashedPassword, AccountRole.ADMIN);
 

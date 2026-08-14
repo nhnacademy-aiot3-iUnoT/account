@@ -44,7 +44,8 @@ public class AccountController {
     public ResponseEntity<ApiResponse<?>> createAccount(
             @Valid @RequestBody CreateAccountRequest request
     ) {
-        Account account = accountService.createAccount(request);
+        accountService.createAccount(request);
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.ok());

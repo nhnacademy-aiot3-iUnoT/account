@@ -40,3 +40,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+
+clients:
+  inventory:
+    base-url: ${INVENTORY_BASE_URL:http://inventory}

@@ -3,7 +3,7 @@ package com.nhnacademy.account.controller;
 import com.nhnacademy.account.security.AccountUUID;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
-import com.nhnacademy.account.dto.request.CreateAccountRequest;
+import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
@@ -52,7 +52,7 @@ public class AccountAdminController {
     @PostMapping
     public ResponseEntity<ApiResponse<AccountResponse>> createAccount(
             @AccountUUID UUID requesterUuid,
-            @Valid @RequestBody CreateAccountRequest createAccountRequest
+            @Valid @RequestBody CreateAdminAccountRequest createAccountRequest
     ) {
         verifyAdmin(requesterUuid);
 

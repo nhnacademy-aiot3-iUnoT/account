@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.domain.AccountStatusAction;
@@ -40,8 +41,7 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -69,6 +69,58 @@ class AccountAdminControllerTest {
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void createAdminAccountWithoutInviteToken() throws Exception {
+        CreateAdminAccountRequest request = new CreateAdminAccountRequest(
+                "new-admin",
+                "new-admin@test.com",
+                "password"
+        );
+        Account requester = new Account("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
+        Account created = new Account(
+                request.name(),
+                request.email(),
+                "hashed",
+                AccountRole.ADMIN
+        );
+
+        given(accountService.findAccount(requester.getUuid()))
+                .willReturn(requester);
+        given(accountService.createAdminAccount(request))
+                .willReturn(created);
+        authenticate(requester.getUuid());
+
+        mockMvc.perform(post("/api/accounts/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.email").value(request.email()))
+                .andExpect(jsonPath("$.data.accountRole").value("ADMIN"))
+                .andDo(document("admin-create-account",
+                        requestFields(
+                                fieldWithPath("name").description("관리자 이름"),
+                                fieldWithPath("email").description("관리자 이메일"),
+                                fieldWithPath("password").description("관리자 비밀번호")
+                        ),
+                        responseFields(
+                                fieldWithPath("success").description("요청 성공 여부"),
+                                fieldWithPath("data").description("생성된 관리자 정보"),
+                                fieldWithPath("data.uuid").description("관리자 UUID"),
+                                fieldWithPath("data.name").description("관리자 이름"),
+                                fieldWithPath("data.email").description("관리자 이메일"),
+                                fieldWithPath("data.accountRole").description("관리자 권한"),
+                                fieldWithPath("data.accountStatus").description("관리자 상태"),
+                                fieldWithPath("data.createdAt").description("생성 시간"),
+                                fieldWithPath("data.updatedAt").description("최근 수정 시간"),
+                                fieldWithPath("data.withdrawnAt").description("탈퇴 날짜"),
+                                fieldWithPath("error").description("오류 정보"),
+                                fieldWithPath("timestamp").description("응답 생성 시각")
+                        )
+                ));
+
+        then(accountService).should().createAdminAccount(request);
     }
 
     @Test
