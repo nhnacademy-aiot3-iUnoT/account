@@ -15,7 +15,7 @@ services:
       MYSQL_HOST: ${MYSQL_HOST}
       MYSQL_PORT: ${MYSQL_PORT:-3306}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-account}
-      MYSQL_USERNAME: ${MYSQL_USERNAME}정
+      MYSQL_USERNAME: ${MYSQL_USERNAME}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "127.0.0.1:10413:10413"   # 호스트포트(컨테이너 외부로 노출할 포트):컨테이너포트(실제 서비스 포트)
