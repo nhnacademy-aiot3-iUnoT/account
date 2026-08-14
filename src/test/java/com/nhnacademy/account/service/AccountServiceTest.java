@@ -12,9 +12,6 @@ import com.nhnacademy.account.dto.request.SignupCompensateRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
-import com.nhnacademy.account.dto.response.AccountResponse;
-import com.nhnacademy.account.dto.response.CreateAccountResponse;
-import com.nhnacademy.account.dto.response.InvitationsSignupResponse;
 import com.nhnacademy.account.global.client.InvitationClient;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
@@ -87,15 +84,12 @@ class AccountServiceTest {
         given(passwordEncoder.encode(request.password()))
                 .willReturn("hashed");
 
-        given(invitationClient.signup(any()))
-                .willReturn(new InvitationsSignupResponse(true));
 
         given(accountRepository.saveAndFlush(any(Account.class)))
                 .willReturn(account);
 
-        CreateAccountResponse result = accountService.createAccount(request);
+        accountService.createAccount(request);
 
-        assertTrue(result.isOwner());
 
         then(accountRepository)
                 .should()
@@ -155,8 +149,6 @@ class AccountServiceTest {
                 .willReturn(false);
         given(passwordEncoder.encode(request.password()))
                 .willReturn("hashed");
-        given(invitationClient.signup(any()))
-                .willReturn(new InvitationsSignupResponse(false));
         given(accountRepository.saveAndFlush(any(Account.class)))
                 .willThrow(new DataIntegrityViolationException("duplicate email"));
 

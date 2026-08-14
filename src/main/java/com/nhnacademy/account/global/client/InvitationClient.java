@@ -2,7 +2,6 @@ package com.nhnacademy.account.global.client;
 
 import com.nhnacademy.account.dto.request.InvitationsSignupRequest;
 import com.nhnacademy.account.dto.request.SignupCompensateRequest;
-import com.nhnacademy.account.dto.response.InvitationsSignupResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -12,8 +11,8 @@ public class InvitationClient {
     private static final String INVITATION_SERVICE = "/api/core/internal/invitations";
     private final InventoryClient inventoryClient;
 
-    public InvitationsSignupResponse signup(InvitationsSignupRequest invitationsSignupRequest) {
-        return inventoryClient.post(INVITATION_SERVICE + "/use", invitationsSignupRequest, InvitationsSignupResponse.class);
+    public Void signup(InvitationsSignupRequest invitationsSignupRequest) {
+        return inventoryClient.post(INVITATION_SERVICE + "/use", invitationsSignupRequest, Void.class);
     }
 
     public Void compensate(SignupCompensateRequest request) {

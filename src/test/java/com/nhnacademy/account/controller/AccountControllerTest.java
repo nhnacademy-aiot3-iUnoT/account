@@ -10,7 +10,6 @@ import com.nhnacademy.account.dto.request.ResetPasswordTokenRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
-import com.nhnacademy.account.dto.response.CreateAccountResponse;
 import com.nhnacademy.account.service.AccountService;
 import com.nhnacademy.account.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
@@ -112,9 +111,6 @@ class AccountControllerTest {
                 UUID.randomUUID(), "test", "test@test.com", "hashed"
         );
 
-        given(accountService.createAccount(any(CreateAccountRequest.class)))
-                .willReturn(new CreateAccountResponse(true));
-
         mockMvc.perform(post("/api/accounts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -129,14 +125,12 @@ class AccountControllerTest {
                         responseFields(
                                 fieldWithPath("success").description("요청 성공 여부"),
                                 fieldWithPath("data").description("응답 데이터"),
-                                fieldWithPath("data.isOwner").description("초대 대상 공간의 소유자 여부"),
                                 fieldWithPath("error").description("오류 정보"),
                                 fieldWithPath("timestamp").description("응답 생성 시각")
                         )
                 ))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.isOwner").value(true));
+                .andExpect(jsonPath("$.success").value(true));
     }
 
     @Test

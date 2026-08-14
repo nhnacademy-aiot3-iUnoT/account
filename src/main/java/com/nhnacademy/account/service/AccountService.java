@@ -3,8 +3,6 @@ package com.nhnacademy.account.service;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
 import com.nhnacademy.account.dto.request.*;
-import com.nhnacademy.account.dto.response.CreateAccountResponse;
-import com.nhnacademy.account.dto.response.InvitationsSignupResponse;
 import com.nhnacademy.account.global.client.InvitationClient;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
@@ -30,7 +28,7 @@ public class AccountService {
     private final InvitationClient invitationClient;
 
     @Transactional
-    public CreateAccountResponse createAccount(CreateAccountRequest request) {
+    public void createAccount(CreateAccountRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
         Account account = new Account(request.name(), request.email(), hashedPassword);
 
@@ -43,7 +41,7 @@ public class AccountService {
                 request.email(),
                 account.getUuid()
         );
-        InvitationsSignupResponse invitationResponse = invitationClient.signup(invitationRequest);
+        invitationClient.signup(invitationRequest);
 
         try {
             accountRepository.saveAndFlush(account);
@@ -61,8 +59,6 @@ public class AccountService {
 
             throw saveException;
         }
-
-        return new CreateAccountResponse(invitationResponse.isOwner());
     }
 
     @Transactional
