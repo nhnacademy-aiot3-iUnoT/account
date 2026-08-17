@@ -1,6 +1,7 @@
 package com.nhnacademy.account.controller;
 
 import com.nhnacademy.account.domain.Account;
+import com.nhnacademy.account.dto.request.InternalAccountInfoResponse;
 import com.nhnacademy.account.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,13 +18,18 @@ public class AccountsInternalController {
     private final AccountService accountService;
 
     @GetMapping("/search")
-    public List<Account> searchAccounts(@RequestParam String email) {
+    public List<InternalAccountInfoResponse> searchAccounts(@RequestParam String email) {
 
-        return accountService.findAllByEmail(email);
+        List<Account> accounts = accountService.findAllByEmail(email);
+
+        return accounts.stream().map(InternalAccountInfoResponse::from).toList();
     }
 
     @GetMapping
-    public List<Account> searchAccounts(@RequestParam List<String> uuids) {
-        return accountService.findByUuids(uuids);
+    public List<InternalAccountInfoResponse> searchAccounts(@RequestParam List<String> uuids) {
+
+        List<Account> accounts = accountService.findByUuids(uuids);
+
+        return accounts.stream().map(InternalAccountInfoResponse::from).toList();
     }
 }

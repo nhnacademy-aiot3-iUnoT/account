@@ -2,6 +2,7 @@ package com.nhnacademy.account.repository;
 
 
 import com.nhnacademy.account.domain.Account;
+import com.nhnacademy.account.domain.AccountStatus;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -92,5 +94,27 @@ public class AccountRepositoryTest {
         assertThat(withdrawnAccount.getEmail()).isNull();
         assertThat(withdrawnAccount.getHashedPassword()).isNull();
         assertThat(withdrawnAccount.isWithdrawn()).isTrue();
+    }
+
+    @Test
+    @DisplayName("내부 UUID 조회에서 탈퇴 계정을 제외한다")
+    void findAccountsByUuidsExcludesWithdrawnAccounts() {
+        Account activeAccount = new Account("active", "active@example.com", "hashed-password");
+        Account withdrawnAccount = new Account("withdrawn", "withdrawn@example.com", "hashed-password");
+        accountRepository.saveAllAndFlush(List.of(activeAccount, withdrawnAccount));
+
+        withdrawnAccount.withdraw();
+        accountRepository.flush();
+        entityManager.clear();
+
+        List<Account> result = accountRepository
+                .findAccountsByUuidIsInAndAccountStatusNot(
+                        List.of(activeAccount.getUuid(), withdrawnAccount.getUuid()),
+                        AccountStatus.WITHDRAWN
+                );
+
+        assertThat(result)
+                .extracting(Account::getUuid)
+                .containsExactly(activeAccount.getUuid());
     }
 }

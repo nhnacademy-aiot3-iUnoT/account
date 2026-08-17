@@ -1,6 +1,7 @@
 package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
+import com.nhnacademy.account.domain.AccountStatus;
 import com.nhnacademy.account.domain.AccountStatusAction;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
 import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
@@ -339,6 +340,124 @@ class AccountServiceTest {
         then(accountRepository)
                 .should()
                 .findByUuid(any(UUID.class));
+    }
+
+    @Test
+    void findAllByEmailWithFullEmail() {
+        String email = "  Test@Test.COM  ";
+        List<Account> accounts = List.of(account);
+
+        given(accountRepository.findAllByEmailStartingWithAndAccountStatusNot(
+                "test@test.com",
+                AccountStatus.WITHDRAWN
+        ))
+                .willReturn(accounts);
+
+        List<Account> result = accountService.findAllByEmail(email);
+
+        assertSame(accounts, result);
+        then(accountRepository)
+                .should()
+                .findAllByEmailStartingWithAndAccountStatusNot(
+                        "test@test.com",
+                        AccountStatus.WITHDRAWN
+                );
+    }
+
+    @Test
+    void findAllByEmailWithLocalPart() {
+        String email = "Test";
+        List<Account> accounts = List.of(account);
+
+        given(accountRepository.findAllByEmailStartingWithAndAccountStatusNot(
+                "test@",
+                AccountStatus.WITHDRAWN
+        ))
+                .willReturn(accounts);
+
+        List<Account> result = accountService.findAllByEmail(email);
+
+        assertSame(accounts, result);
+        then(accountRepository)
+                .should()
+                .findAllByEmailStartingWithAndAccountStatusNot(
+                        "test@",
+                        AccountStatus.WITHDRAWN
+                );
+    }
+
+    @Test
+    void findAllByEmailWithNoMatches() {
+        given(accountRepository.findAllByEmailStartingWithAndAccountStatusNot(
+                "missing@",
+                AccountStatus.WITHDRAWN
+        ))
+                .willReturn(List.of());
+
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> accountService.findAllByEmail("missing")
+        );
+
+        assertEquals(ErrorCode.ACCOUNT_NOT_FOUND, exception.getErrorCode());
+        then(accountRepository)
+                .should()
+                .findAllByEmailStartingWithAndAccountStatusNot(
+                        "missing@",
+                        AccountStatus.WITHDRAWN
+                );
+    }
+
+    @Test
+    void findByUuids() {
+        Account firstAccount = new Account("first", "first@test.com", "hashed");
+        Account secondAccount = new Account("second", "second@test.com", "hashed");
+        UUID missingUuid = UUID.randomUUID();
+        List<UUID> uuidList = List.of(
+                secondAccount.getUuid(),
+                missingUuid,
+                firstAccount.getUuid()
+        );
+        List<String> uuids = List.of(
+                secondAccount.getUuid().toString(),
+                missingUuid.toString(),
+                firstAccount.getUuid().toString(),
+                secondAccount.getUuid().toString()
+        );
+
+        given(accountRepository.findAccountsByUuidIsInAndAccountStatusNot(
+                uuidList,
+                AccountStatus.WITHDRAWN
+        )).willReturn(List.of(firstAccount, secondAccount));
+
+        List<Account> result = accountService.findByUuids(uuids);
+
+        assertEquals(List.of(secondAccount, firstAccount), result);
+        then(accountRepository)
+                .should()
+                .findAccountsByUuidIsInAndAccountStatusNot(
+                        uuidList,
+                        AccountStatus.WITHDRAWN
+                );
+    }
+
+    @Test
+    void findByUuidsWithEmptyList() {
+        List<Account> result = accountService.findByUuids(List.of());
+
+        assertTrue(result.isEmpty());
+        then(accountRepository).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void findByUuidsWithInvalidUuid() {
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> accountService.findByUuids(List.of("invalid-uuid"))
+        );
+
+        assertEquals(ErrorCode.INVALID_INPUT, exception.getErrorCode());
+        then(accountRepository).shouldHaveNoInteractions();
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
+import com.nhnacademy.account.domain.AccountStatus;
 import com.nhnacademy.account.dto.request.*;
 import com.nhnacademy.account.global.client.InvitationClient;
 import com.nhnacademy.account.global.error.ErrorCode;
@@ -16,8 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -93,9 +98,16 @@ public class AccountService {
     }
 
     public List<Account> findAllByEmail(String email) {
-        String emailAddress = email.contains("@") ? email.toLowerCase() : email.concat("@").toLowerCase();
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        String emailAddress = normalizedEmail.contains("@")
+                ? normalizedEmail
+                : normalizedEmail.concat("@");
 
-        List<Account> accounts = accountRepository.findAllByEmailStartingWith(emailAddress);
+        List<Account> accounts = accountRepository
+                .findAllByEmailStartingWithAndAccountStatusNot(
+                        emailAddress,
+                        AccountStatus.WITHDRAWN
+                );
         if (accounts.isEmpty()) {
             throw new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
@@ -108,16 +120,27 @@ public class AccountService {
             return List.of();
         }
 
-        List<UUID> uuidList = new ArrayList<>();
+        Set<UUID> uniqueUuids = new LinkedHashSet<>();
         for (String uuid : uuids) {
             try {
-                uuidList.add(UUID.fromString(uuid));
+                uniqueUuids.add(UUID.fromString(uuid));
             } catch (IllegalArgumentException e) {
-                throw new BadRequestException(ErrorCode.ACCOUNT_NOT_FOUND);
+                throw new BadRequestException(ErrorCode.INVALID_INPUT);
             }
         }
+        List<UUID> uuidList = List.copyOf(uniqueUuids);
 
-        return accountRepository.findAccountsByUuidIsIn(uuidList);
+        List<Account> accounts = new ArrayList<>(
+                accountRepository.findAccountsByUuidIsInAndAccountStatusNot(
+                        uuidList,
+                        AccountStatus.WITHDRAWN
+                )
+        );
+        accounts.sort(Comparator.comparingInt(
+                account -> uuidList.indexOf(account.getUuid())
+        ));
+
+        return accounts;
     }
 
     public List<Account> findAll() {
