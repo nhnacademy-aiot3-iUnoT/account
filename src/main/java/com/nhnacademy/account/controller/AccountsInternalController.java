@@ -25,7 +25,7 @@ public class AccountsInternalController {
         return ResponseEntity.ok(responseList);
     }
 
-    @GetMapping
+    @GetMapping("/accounts")
     public ResponseEntity<List<InternalAccountInfoResponse>> searchAccounts(@RequestParam List<String> uuids) {
 
         List<Account> accounts = accountService.findByUuids(uuids);
@@ -34,7 +34,7 @@ public class AccountsInternalController {
         return ResponseEntity.ok(responseList);
     }
 
-    @DeleteMapping
+    @DeleteMapping("accounts")
     public ResponseEntity<InternalAccountInfoResponse> deleteAccounts(@RequestParam(name = "account-uuid") String accountUuid) {
         UUID uuid = UUID.fromString(accountUuid);
 
@@ -43,7 +43,7 @@ public class AccountsInternalController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/bulk-delete")
+    @PostMapping("/accounts/bulk-delete")
     public ResponseEntity<Void> bulkDeleteAccounts(@RequestBody List<String> uuids) {
         List<UUID> uuidList = uuids.stream().map(UUID::fromString).toList();
 
