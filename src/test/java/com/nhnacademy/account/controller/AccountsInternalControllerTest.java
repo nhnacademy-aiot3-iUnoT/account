@@ -91,7 +91,7 @@ class AccountsInternalControllerTest {
         String uuidParameter = String.join(",", uuids);
         given(accountService.findByUuids(uuids)).willReturn(accounts);
 
-        mockMvc.perform(get("/api/accounts/internal/accounts")
+        mockMvc.perform(get("/api/accounts/internal")
                         .queryParam("uuids", uuidParameter))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].accountUuid").value(uuids.get(0)))
@@ -113,7 +113,7 @@ class AccountsInternalControllerTest {
                 .given(accountService)
                 .findByUuids(List.of(invalidUuid));
 
-        mockMvc.perform(get("/api/accounts/internal/accounts")
+        mockMvc.perform(get("/api/accounts/internal")
                         .queryParam("uuids", invalidUuid))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -133,7 +133,7 @@ class AccountsInternalControllerTest {
         );
         given(accountService.withdrawAccount(accountUuid)).willReturn(response);
 
-        mockMvc.perform(delete("/api/accounts/internal/accounts")
+        mockMvc.perform(delete("/api/accounts/internal")
                         .queryParam("account-uuid", accountUuid.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountUuid").value(accountUuid.toString()))
@@ -148,7 +148,7 @@ class AccountsInternalControllerTest {
         List<UUID> accountUuids = List.of(UUID.randomUUID(), UUID.randomUUID());
         List<String> request = accountUuids.stream().map(UUID::toString).toList();
 
-        mockMvc.perform(post("/api/accounts/internal/accounts/bulk-delete")
+        mockMvc.perform(post("/api/accounts/internal/bulk-delete")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNoContent());
