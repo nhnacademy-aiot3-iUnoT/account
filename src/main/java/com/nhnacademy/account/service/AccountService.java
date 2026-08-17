@@ -2,7 +2,9 @@ package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
+import com.nhnacademy.account.domain.AccountStatus;
 import com.nhnacademy.account.dto.request.*;
+import com.nhnacademy.account.dto.response.InternalAccountInfoResponse;
 import com.nhnacademy.account.global.client.InvitationClient;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
@@ -15,8 +17,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -30,7 +37,7 @@ public class AccountService {
     @Transactional
     public void createAccount(CreateAccountRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
-        Account account = new Account(request.name(), request.email(), hashedPassword);
+        Account account = new Account(request.name(), request.email().toLowerCase(), hashedPassword);
 
         if (accountRepository.existsByEmail(account.getEmail())) {
             throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -64,7 +71,7 @@ public class AccountService {
     @Transactional
     public Account createAdminAccount(CreateAdminAccountRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
-        Account account = new Account(request.name(), request.email(), hashedPassword, AccountRole.ADMIN);
+        Account account = new Account(request.name(), request.email().toLowerCase(), hashedPassword, AccountRole.ADMIN);
 
         if (accountRepository.existsByEmail(account.getEmail())) {
             throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -87,8 +94,62 @@ public class AccountService {
     }
 
     public Account findAccountByEmail(String email) {
-        return accountRepository.findByEmail(email)
+        return accountRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+    }
+
+    public List<Account> findAllByEmail(String email) {
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+
+        if (normalizedEmail.contains("@")) {
+            Account account = accountRepository
+                    .findByEmailAndAccountStatusNot(
+                            normalizedEmail,
+                            AccountStatus.WITHDRAWN
+                    )
+                    .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+            return List.of(account);
+        }
+
+        List<Account> accounts = accountRepository
+                .findAllByEmailStartingWithAndAccountStatusNot(
+                        normalizedEmail.concat("@"),
+                        AccountStatus.WITHDRAWN
+                );
+        if (accounts.isEmpty()) {
+            throw new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        return accounts;
+    }
+
+    public List<Account> findByUuids(List<String> uuids) {
+        if (uuids.isEmpty()) {
+            return List.of();
+        }
+
+        Set<UUID> uniqueUuids = new LinkedHashSet<>();
+        for (String uuid : uuids) {
+            try {
+                uniqueUuids.add(UUID.fromString(uuid.trim()));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException(ErrorCode.INVALID_INPUT);
+            }
+        }
+        List<UUID> uuidList = List.copyOf(uniqueUuids);
+
+        List<Account> accounts = new ArrayList<>(
+                accountRepository.findAccountsByUuidIsInAndAccountStatusNot(
+                        uuidList,
+                        AccountStatus.WITHDRAWN
+                )
+        );
+        accounts.sort(Comparator.comparingInt(
+                account -> uuidList.indexOf(account.getUuid())
+        ));
+
+        return accounts;
     }
 
     public List<Account> findAll() {
@@ -149,6 +210,27 @@ public class AccountService {
         }
 
         account.withdraw();
+    }
+
+    @Transactional
+    public InternalAccountInfoResponse withdrawAccount(UUID uuid) {
+        Account account = accountRepository.findByUuid(uuid)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        InternalAccountInfoResponse response = InternalAccountInfoResponse.from(account);
+
+        account.withdraw();
+
+        return response;
+    }
+
+    @Transactional
+    public void withdrawAccountBulk(List<UUID> uuids) {
+        for (UUID uuid : uuids) {
+            Account account = accountRepository.findByUuid(uuid)
+                    .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+            account.withdraw();
+        }
     }
 
     public boolean availableEmail(EmailAvailabilityRequest request) {

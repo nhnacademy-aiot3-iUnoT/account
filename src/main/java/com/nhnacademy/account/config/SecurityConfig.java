@@ -5,13 +5,10 @@ import com.nhnacademy.account.security.ApiAuthenticationEntryPoint;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -84,7 +81,8 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/accounts/check-email",
                                 "/.well-known/jwks.json",
-                                "/api/accounts/pwd/**"
+                                "/api/accounts/pwd/**",
+                                "/api/accounts/internal/**"
                         ).permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/accounts")
