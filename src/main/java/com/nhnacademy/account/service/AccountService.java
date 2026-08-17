@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,7 +31,7 @@ public class AccountService {
     @Transactional
     public void createAccount(CreateAccountRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
-        Account account = new Account(request.name(), request.email(), hashedPassword);
+        Account account = new Account(request.name(), request.email().toLowerCase(), hashedPassword);
 
         if (accountRepository.existsByEmail(account.getEmail())) {
             throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -64,7 +65,7 @@ public class AccountService {
     @Transactional
     public Account createAdminAccount(CreateAdminAccountRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
-        Account account = new Account(request.name(), request.email(), hashedPassword, AccountRole.ADMIN);
+        Account account = new Account(request.name(), request.email().toLowerCase(), hashedPassword, AccountRole.ADMIN);
 
         if (accountRepository.existsByEmail(account.getEmail())) {
             throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -87,8 +88,36 @@ public class AccountService {
     }
 
     public Account findAccountByEmail(String email) {
-        return accountRepository.findByEmail(email)
+        return accountRepository.findByEmail(email.toLowerCase())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+    }
+
+    public List<Account> findAllByEmail(String email) {
+        String emailAddress = email.contains("@") ? email.toLowerCase() : email.concat("@").toLowerCase();
+
+        List<Account> accounts = accountRepository.findAllByEmailStartingWith(emailAddress);
+        if (accounts.isEmpty()) {
+            throw new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        return accounts;
+    }
+
+    public List<Account> findByUuids(List<String> uuids) {
+        if (uuids.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> uuidList = new ArrayList<>();
+        for (String uuid : uuids) {
+            try {
+                uuidList.add(UUID.fromString(uuid));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException(ErrorCode.ACCOUNT_NOT_FOUND);
+            }
+        }
+
+        return accountRepository.findAccountsByUuidIsIn(uuidList);
     }
 
     public List<Account> findAll() {

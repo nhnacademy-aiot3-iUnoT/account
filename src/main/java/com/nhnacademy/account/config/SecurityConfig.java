@@ -84,7 +84,8 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/accounts/check-email",
                                 "/.well-known/jwks.json",
-                                "/api/accounts/pwd/**"
+                                "/api/accounts/pwd/**",
+                                "/api/accounts/internal/**"
                         ).permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/accounts")
