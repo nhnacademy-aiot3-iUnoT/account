@@ -132,7 +132,7 @@ public class AccountService {
         Set<UUID> uniqueUuids = new LinkedHashSet<>();
         for (String uuid : uuids) {
             try {
-                uniqueUuids.add(UUID.fromString(uuid));
+                uniqueUuids.add(UUID.fromString(uuid.trim()));
             } catch (IllegalArgumentException e) {
                 throw new BadRequestException(ErrorCode.INVALID_INPUT);
             }

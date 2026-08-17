@@ -88,10 +88,11 @@ class AccountsInternalControllerTest {
         List<String> uuids = accounts.stream()
                 .map(account -> account.getUuid().toString())
                 .toList();
+        String uuidParameter = String.join(",", uuids);
         given(accountService.findByUuids(uuids)).willReturn(accounts);
 
-        mockMvc.perform(get("/api/accounts/internal")
-                        .queryParam("uuids", uuids.toArray(String[]::new)))
+        mockMvc.perform(get("/api/accounts/internal/accounts")
+                        .queryParam("uuids", uuidParameter))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].accountUuid").value(uuids.get(0)))
                 .andExpect(jsonPath("$[0].email").value("member1@test.com"))
@@ -112,7 +113,7 @@ class AccountsInternalControllerTest {
                 .given(accountService)
                 .findByUuids(List.of(invalidUuid));
 
-        mockMvc.perform(get("/api/accounts/internal")
+        mockMvc.perform(get("/api/accounts/internal/accounts")
                         .queryParam("uuids", invalidUuid))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -132,7 +133,7 @@ class AccountsInternalControllerTest {
         );
         given(accountService.withdrawAccount(accountUuid)).willReturn(response);
 
-        mockMvc.perform(delete("/api/accounts/internal")
+        mockMvc.perform(delete("/api/accounts/internal/accounts")
                         .queryParam("account-uuid", accountUuid.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accountUuid").value(accountUuid.toString()))
@@ -147,7 +148,7 @@ class AccountsInternalControllerTest {
         List<UUID> accountUuids = List.of(UUID.randomUUID(), UUID.randomUUID());
         List<String> request = accountUuids.stream().map(UUID::toString).toList();
 
-        mockMvc.perform(post("/api/accounts/internal/bulk-delete")
+        mockMvc.perform(post("/api/accounts/internal/accounts/bulk-delete")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNoContent());

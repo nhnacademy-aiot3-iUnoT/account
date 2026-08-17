@@ -489,6 +489,35 @@ class AccountServiceTest {
     }
 
     @Test
+    void findByUuidsTrimsWhitespace() {
+        Account firstAccount = new Account("first", "first@test.com", "hashed");
+        Account secondAccount = new Account("second", "second@test.com", "hashed");
+        List<UUID> uuidList = List.of(
+                firstAccount.getUuid(),
+                secondAccount.getUuid()
+        );
+        List<String> uuids = List.of(
+                firstAccount.getUuid().toString(),
+                " " + secondAccount.getUuid()
+        );
+
+        given(accountRepository.findAccountsByUuidIsInAndAccountStatusNot(
+                uuidList,
+                AccountStatus.WITHDRAWN
+        )).willReturn(List.of(firstAccount, secondAccount));
+
+        List<Account> result = accountService.findByUuids(uuids);
+
+        assertEquals(List.of(firstAccount, secondAccount), result);
+        then(accountRepository)
+                .should()
+                .findAccountsByUuidIsInAndAccountStatusNot(
+                        uuidList,
+                        AccountStatus.WITHDRAWN
+                );
+    }
+
+    @Test
     void findAll() {
         List<Account> accountList = List.of(account, account);
 
