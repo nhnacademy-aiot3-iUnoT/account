@@ -4,6 +4,7 @@ import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
 import com.nhnacademy.account.domain.AccountStatus;
 import com.nhnacademy.account.dto.request.*;
+import com.nhnacademy.account.dto.response.InternalAccountInfoResponse;
 import com.nhnacademy.account.global.client.InvitationClient;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
@@ -99,13 +100,21 @@ public class AccountService {
 
     public List<Account> findAllByEmail(String email) {
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
-        String emailAddress = normalizedEmail.contains("@")
-                ? normalizedEmail
-                : normalizedEmail.concat("@");
+
+        if (normalizedEmail.contains("@")) {
+            Account account = accountRepository
+                    .findByEmailAndAccountStatusNot(
+                            normalizedEmail,
+                            AccountStatus.WITHDRAWN
+                    )
+                    .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+            return List.of(account);
+        }
 
         List<Account> accounts = accountRepository
                 .findAllByEmailStartingWithAndAccountStatusNot(
-                        emailAddress,
+                        normalizedEmail.concat("@"),
                         AccountStatus.WITHDRAWN
                 );
         if (accounts.isEmpty()) {
@@ -201,6 +210,27 @@ public class AccountService {
         }
 
         account.withdraw();
+    }
+
+    @Transactional
+    public InternalAccountInfoResponse withdrawAccount(UUID uuid) {
+        Account account = accountRepository.findByUuid(uuid)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        InternalAccountInfoResponse response = InternalAccountInfoResponse.from(account);
+
+        account.withdraw();
+
+        return response;
+    }
+
+    @Transactional
+    public void withdrawAccountBulk(List<UUID> uuids) {
+        for (UUID uuid : uuids) {
+            Account account = accountRepository.findByUuid(uuid)
+                    .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+            account.withdraw();
+        }
     }
 
     public boolean availableEmail(EmailAvailabilityRequest request) {

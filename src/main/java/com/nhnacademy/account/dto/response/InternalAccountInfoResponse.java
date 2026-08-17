@@ -1,4 +1,4 @@
-package com.nhnacademy.account.dto.request;
+package com.nhnacademy.account.dto.response;
 
 import com.nhnacademy.account.domain.Account;
 

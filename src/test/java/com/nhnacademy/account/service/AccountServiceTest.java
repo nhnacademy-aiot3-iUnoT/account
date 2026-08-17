@@ -13,6 +13,7 @@ import com.nhnacademy.account.dto.request.SignupCompensateRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
+import com.nhnacademy.account.dto.response.InternalAccountInfoResponse;
 import com.nhnacademy.account.global.client.InvitationClient;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
@@ -32,6 +33,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -343,23 +345,49 @@ class AccountServiceTest {
     }
 
     @Test
-    void findAllByEmailWithFullEmail() {
-        String email = "  Test@Test.COM  ";
+    void findAllByEmailNormalizesWithLocaleRoot() {
+        Locale originalLocale = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+        String email = "  I@Test.COM  ";
         List<Account> accounts = List.of(account);
 
-        given(accountRepository.findAllByEmailStartingWithAndAccountStatusNot(
-                "test@test.com",
+        try {
+            given(accountRepository.findByEmailAndAccountStatusNot(
+                    "i@test.com",
+                    AccountStatus.WITHDRAWN
+            )).willReturn(Optional.of(account));
+
+            List<Account> result = accountService.findAllByEmail(email);
+
+            assertEquals(accounts, result);
+            then(accountRepository)
+                    .should()
+                    .findByEmailAndAccountStatusNot(
+                            "i@test.com",
+                            AccountStatus.WITHDRAWN
+                    );
+        } finally {
+            Locale.setDefault(originalLocale);
+        }
+    }
+
+    @Test
+    void findAllByFullEmailWithNoMatch() {
+        given(accountRepository.findByEmailAndAccountStatusNot(
+                "missing@test.com",
                 AccountStatus.WITHDRAWN
-        ))
-                .willReturn(accounts);
+        )).willReturn(Optional.empty());
 
-        List<Account> result = accountService.findAllByEmail(email);
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> accountService.findAllByEmail("missing@test.com")
+        );
 
-        assertSame(accounts, result);
+        assertEquals(ErrorCode.ACCOUNT_NOT_FOUND, exception.getErrorCode());
         then(accountRepository)
                 .should()
-                .findAllByEmailStartingWithAndAccountStatusNot(
-                        "test@test.com",
+                .findByEmailAndAccountStatusNot(
+                        "missing@test.com",
                         AccountStatus.WITHDRAWN
                 );
     }
@@ -409,7 +437,7 @@ class AccountServiceTest {
     }
 
     @Test
-    void findByUuids() {
+    void findByUuidsPreservesRequestOrderAndRemovesDuplicates() {
         Account firstAccount = new Account("first", "first@test.com", "hashed");
         Account secondAccount = new Account("second", "second@test.com", "hashed");
         UUID missingUuid = UUID.randomUUID();
@@ -576,6 +604,61 @@ class AccountServiceTest {
         assertEquals(ErrorCode.PASSWORD_MISMATCH, exception.getErrorCode());
         assertEquals("test@test.com", account.getEmail());
         assertEquals("hashed", account.getHashedPassword());
+    }
+
+    @Test
+    void withdrawAccountInternally() {
+        UUID uuid = account.getUuid();
+        String email = account.getEmail();
+        given(accountRepository.findByUuid(uuid)).willReturn(Optional.of(account));
+
+        InternalAccountInfoResponse result = accountService.withdrawAccount(uuid);
+
+        assertEquals(uuid, result.accountUuid());
+        assertEquals(email, result.email());
+        assertTrue(account.isWithdrawn());
+        assertNull(account.getEmail());
+        assertNull(account.getHashedPassword());
+        then(accountRepository).should().findByUuid(uuid);
+    }
+
+    @Test
+    void withdrawAccountInternallyWithUnknownUuid() {
+        UUID uuid = UUID.randomUUID();
+        given(accountRepository.findByUuid(uuid)).willReturn(Optional.empty());
+
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> accountService.withdrawAccount(uuid)
+        );
+
+        assertEquals(ErrorCode.ACCOUNT_NOT_FOUND, exception.getErrorCode());
+        then(accountRepository).should().findByUuid(uuid);
+    }
+
+    @Test
+    void withdrawAccountsInBulk() {
+        Account firstAccount = new Account("first", "first@test.com", "hashed");
+        Account secondAccount = new Account("second", "second@test.com", "hashed");
+        List<UUID> uuids = List.of(firstAccount.getUuid(), secondAccount.getUuid());
+        given(accountRepository.findByUuid(firstAccount.getUuid()))
+                .willReturn(Optional.of(firstAccount));
+        given(accountRepository.findByUuid(secondAccount.getUuid()))
+                .willReturn(Optional.of(secondAccount));
+
+        accountService.withdrawAccountBulk(uuids);
+
+        assertTrue(firstAccount.isWithdrawn());
+        assertTrue(secondAccount.isWithdrawn());
+        then(accountRepository).should().findByUuid(firstAccount.getUuid());
+        then(accountRepository).should().findByUuid(secondAccount.getUuid());
+    }
+
+    @Test
+    void withdrawAccountsInBulkWithEmptyList() {
+        accountService.withdrawAccountBulk(List.of());
+
+        then(accountRepository).shouldHaveNoInteractions();
     }
 
     @Test

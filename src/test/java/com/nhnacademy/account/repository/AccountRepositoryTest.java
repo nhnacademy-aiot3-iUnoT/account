@@ -79,6 +79,24 @@ public class AccountRepositoryTest {
     }
 
     @Test
+    @DisplayName("전체 이메일 조회는 정확히 일치하는 계정만 반환한다")
+    void findByFullEmailUsesExactMatch() {
+        Account exactAccount = new Account("exact", "admin@gmail.com", "hashed-password");
+        Account prefixedAccount = new Account("prefixed", "admin@gmail.com.example", "hashed-password");
+        accountRepository.saveAllAndFlush(List.of(exactAccount, prefixedAccount));
+        entityManager.clear();
+
+        Account result = accountRepository
+                .findByEmailAndAccountStatusNot(
+                        "admin@gmail.com",
+                        AccountStatus.WITHDRAWN
+                )
+                .orElseThrow();
+
+        assertThat(result.getUuid()).isEqualTo(exactAccount.getUuid());
+    }
+
+    @Test
     @DisplayName("탈퇴 계정의 이메일과 비밀번호 해시는 null로 저장한다")
     void withdrawnAccountCanPersistNullCredentials() {
         Account account = new Account("tester", "tester@example.com", "hashed-password");
@@ -97,24 +115,41 @@ public class AccountRepositoryTest {
     }
 
     @Test
-    @DisplayName("내부 UUID 조회에서 탈퇴 계정을 제외한다")
-    void findAccountsByUuidsExcludesWithdrawnAccounts() {
+    @DisplayName("내부 UUID 조회에서 탈퇴 계정만 제외한다")
+    void findAccountsByUuidsExcludesOnlyWithdrawnAccounts() {
         Account activeAccount = new Account("active", "active@example.com", "hashed-password");
+        Account lockedAccount = new Account("locked", "locked@example.com", "hashed-password");
+        Account inactiveAccount = new Account("inactive", "inactive@example.com", "hashed-password");
         Account withdrawnAccount = new Account("withdrawn", "withdrawn@example.com", "hashed-password");
-        accountRepository.saveAllAndFlush(List.of(activeAccount, withdrawnAccount));
 
+        lockedAccount.lock();
+        inactiveAccount.deactivate();
         withdrawnAccount.withdraw();
-        accountRepository.flush();
+        accountRepository.saveAllAndFlush(List.of(
+                activeAccount,
+                lockedAccount,
+                inactiveAccount,
+                withdrawnAccount
+        ));
         entityManager.clear();
 
         List<Account> result = accountRepository
                 .findAccountsByUuidIsInAndAccountStatusNot(
-                        List.of(activeAccount.getUuid(), withdrawnAccount.getUuid()),
+                        List.of(
+                                activeAccount.getUuid(),
+                                lockedAccount.getUuid(),
+                                inactiveAccount.getUuid(),
+                                withdrawnAccount.getUuid()
+                        ),
                         AccountStatus.WITHDRAWN
                 );
 
         assertThat(result)
                 .extracting(Account::getUuid)
-                .containsExactly(activeAccount.getUuid());
+                .containsExactlyInAnyOrder(
+                        activeAccount.getUuid(),
+                        lockedAccount.getUuid(),
+                        inactiveAccount.getUuid()
+                );
     }
 }

@@ -1,6 +1,8 @@
 package com.nhnacademy.account.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.account.domain.Account;
+import com.nhnacademy.account.dto.response.InternalAccountInfoResponse;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.service.AccountService;
@@ -10,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -18,12 +21,15 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -36,6 +42,8 @@ class AccountsInternalControllerTest {
 
     @MockitoBean
     private AccountService accountService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private MockMvc mockMvc;
 
@@ -112,5 +120,38 @@ class AccountsInternalControllerTest {
                 .andExpect(jsonPath("$.error.code").value("G001"));
 
         then(accountService).should().findByUuids(List.of(invalidUuid));
+    }
+
+    @Test
+    @DisplayName("DELETE - 단일 계정 탈퇴")
+    void deleteAccount() throws Exception {
+        UUID accountUuid = UUID.randomUUID();
+        InternalAccountInfoResponse response = new InternalAccountInfoResponse(
+                accountUuid,
+                "member@test.com"
+        );
+        given(accountService.withdrawAccount(accountUuid)).willReturn(response);
+
+        mockMvc.perform(delete("/api/accounts/internal")
+                        .queryParam("account-uuid", accountUuid.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accountUuid").value(accountUuid.toString()))
+                .andExpect(jsonPath("$.email").value("member@test.com"));
+
+        then(accountService).should().withdrawAccount(accountUuid);
+    }
+
+    @Test
+    @DisplayName("POST - 계정 일괄 탈퇴")
+    void bulkDeleteAccounts() throws Exception {
+        List<UUID> accountUuids = List.of(UUID.randomUUID(), UUID.randomUUID());
+        List<String> request = accountUuids.stream().map(UUID::toString).toList();
+
+        mockMvc.perform(post("/api/accounts/internal/bulk-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNoContent());
+
+        then(accountService).should().withdrawAccountBulk(accountUuids);
     }
 }
