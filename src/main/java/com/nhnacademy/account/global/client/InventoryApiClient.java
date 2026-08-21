@@ -8,7 +8,6 @@ import com.nhnacademy.account.global.error.exception.UpstreamServiceException;
 import com.nhnacademy.account.global.util.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 import org.springframework.stereotype.Component;
@@ -21,55 +20,42 @@ import java.util.function.Supplier;
 
 @Slf4j
 @Component
-public class InventoryClient {
-    private final String baseUrl;
+public class InventoryApiClient {
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
-    public InventoryClient(
-            @Value("${clients.inventory.base-url}") String baseUrl,
+    public InventoryApiClient(
             @Qualifier("inventoryRestClient") RestClient restClient,
             ObjectMapper objectMapper
     ) {
-        this.baseUrl = baseUrl;
         this.restClient = restClient;
         this.objectMapper = objectMapper;
     }
 
     public <T> T post(String path, Object body, Class<T> dataType) {
-        return execute(() ->
+        ApiResponse<T> response = execute(() ->
                 restClient.post()
-                        .uri(baseUrl + path)
+                        .uri(path)
                         .body(body)
                         .retrieve()
                         .body(responseTypeOf(dataType)));
+
+        return extractData(response);
     }
 
     public void post(String path, Object body) {
-        executeVoid(() ->
+        execute(() ->
                 restClient.post()
-                        .uri(baseUrl + path)
+                        .uri(path)
                         .body(body)
                         .retrieve()
-                        .toBodilessEntity());
+                        .toBodilessEntity()
+        );
     }
 
-    private <T> T execute(Supplier<ApiResponse<T>> supplier) {
+    private <T> T execute(Supplier<T> request) {
         try {
-            ApiResponse<T> response = supplier.get();
-
-            if (response == null) {
-                throw new UpstreamServiceException(
-                        "Inventory 서비스 응답 본문이 없습니다."
-                );
-            }
-
-            if (!response.success()) {
-                throw convertApiResponseError(response.error());
-            }
-
-            return response.data();
-
+            return request.get();
         } catch (HttpStatusCodeException e) {
             throw convertApiException(e);
         } catch (ResourceAccessException e) {
@@ -85,22 +71,18 @@ public class InventoryClient {
         }
     }
 
-    private void executeVoid(Runnable request) {
-        try {
-            request.run();
-        } catch (HttpStatusCodeException e) {
-            throw convertApiException(e);
-        } catch (ResourceAccessException e) {
+    private <T> T extractData(ApiResponse<T> response) {
+        if (response == null) {
             throw new UpstreamServiceException(
-                    "Inventory 서비스에 연결할 수 없습니다.",
-                    e
-            );
-        } catch (RestClientException e) {
-            throw new UpstreamServiceException(
-                    ErrorCode.UPSTREAM_SERVICE_ERROR.getMessage(),
-                    e
+                    "Inventory 서비스 응답 본문이 없습니다."
             );
         }
+
+        if (!response.success()) {
+            throw convertApiResponseError(response.error());
+        }
+
+        return response.data();
     }
 
     private UpstreamServiceException convertApiResponseError(ErrorDetail error) {
