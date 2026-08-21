@@ -166,6 +166,15 @@ public class AccountService {
     }
 
     @Transactional
+    public Account reactivateAccount(UUID uuid) {
+        Account account = accountRepository.findByUuid(uuid)
+                .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        account.activate();
+        return account;
+    }
+
+    @Transactional
     public Account updateAccountName(UUID uuid, UpdateAccountNameRequest request) {
 
         Optional<Account> currentAccount = accountRepository.findByUuid(uuid);

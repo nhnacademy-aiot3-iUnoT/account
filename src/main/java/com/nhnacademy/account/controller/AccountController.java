@@ -175,5 +175,13 @@ public class AccountController {
 
     }
 
-
+    @PostMapping("/me/reactivation")
+    public ResponseEntity<ApiResponse<AccountResponse>> reactivateAccount(
+            @AccountUUID UUID accountUuid
+    ) {
+        Account account = accountService.reactivateAccount(accountUuid);
+        return ResponseEntity.ok(
+                ApiResponse.success(AccountResponse.from(account))
+        );
+    }
 }

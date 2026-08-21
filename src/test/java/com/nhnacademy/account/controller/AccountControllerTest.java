@@ -360,6 +360,23 @@ class AccountControllerTest {
     }
 
     @Test
+    @DisplayName("POST - 본인 계정 재활성화")
+    void reactivateCurrentAccount() throws Exception {
+        Account account = accountList.getFirst();
+        UUID accountUuid = account.getUuid();
+
+        given(accountService.reactivateAccount(accountUuid)).willReturn(account);
+        authenticate(accountUuid);
+
+        mockMvc.perform(post("/api/accounts/me/reactivation"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.uuid").value(accountUuid.toString()))
+                .andExpect(jsonPath("$.data.accountStatus").value("ACTIVE"));
+
+        then(accountService).should().reactivateAccount(accountUuid);
+    }
+
+    @Test
     @DisplayName("POST - 이메일 사용 가능 여부 확인")
     void checkEmailAvailability() throws Exception {
         EmailAvailabilityRequest request = new EmailAvailabilityRequest("available@test.com");
