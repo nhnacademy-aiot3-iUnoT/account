@@ -3,15 +3,17 @@ package com.nhnacademy.account.service;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountStatus;
 import com.nhnacademy.account.domain.AccountStatusAction;
+import com.nhnacademy.account.dto.request.AdminResetPasswordRequest;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.ChangeOwnPasswordRequest;
 import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.InvitationsSignupRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
+import com.nhnacademy.account.dto.request.ResetPasswordRequest;
 import com.nhnacademy.account.dto.request.SignupCompensateRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.dto.response.InternalAccountInfoResponse;
 import com.nhnacademy.account.global.client.InvitationClient;
@@ -579,8 +581,79 @@ class AccountServiceTest {
     }
 
     @Test
-    void updateAccountPassword() {
-        UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
+    void changeOwnPassword() {
+        ChangeOwnPasswordRequest request = new ChangeOwnPasswordRequest(
+                "current-password",
+                "new-password"
+        );
+        UUID uuid = UUID.randomUUID();
+
+        given(accountRepository.findByUuid(uuid))
+                .willReturn(Optional.of(account));
+        given(passwordEncoder.matches(request.currentPassword(), account.getHashedPassword()))
+                .willReturn(true);
+        given(passwordEncoder.matches(request.newPassword(), account.getHashedPassword()))
+                .willReturn(false);
+        given(passwordEncoder.encode(request.newPassword()))
+                .willReturn("new-hashed-password");
+
+        Account result = accountService.changeOwnPassword(uuid, request);
+
+        assertEquals(account, result);
+        assertEquals("new-hashed-password", result.getHashedPassword());
+        then(accountRepository).should().findByUuid(uuid);
+        then(passwordEncoder).should().encode(request.newPassword());
+    }
+
+    @Test
+    void changeOwnPasswordWithWrongCurrentPassword() {
+        ChangeOwnPasswordRequest request = new ChangeOwnPasswordRequest(
+                "wrong-password",
+                "new-password"
+        );
+        UUID uuid = UUID.randomUUID();
+
+        given(accountRepository.findByUuid(uuid))
+                .willReturn(Optional.of(account));
+        given(passwordEncoder.matches(request.currentPassword(), account.getHashedPassword()))
+                .willReturn(false);
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> accountService.changeOwnPassword(uuid, request)
+        );
+
+        assertEquals(ErrorCode.PASSWORD_MISMATCH, exception.getErrorCode());
+        assertEquals("hashed", account.getHashedPassword());
+        then(passwordEncoder).should(never()).encode(any());
+    }
+
+    @Test
+    void changeOwnPasswordWithSamePassword() {
+        ChangeOwnPasswordRequest request = new ChangeOwnPasswordRequest(
+                "current-password",
+                "current-password"
+        );
+        UUID uuid = UUID.randomUUID();
+
+        given(accountRepository.findByUuid(uuid))
+                .willReturn(Optional.of(account));
+        given(passwordEncoder.matches(request.currentPassword(), account.getHashedPassword()))
+                .willReturn(true);
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> accountService.changeOwnPassword(uuid, request)
+        );
+
+        assertEquals(ErrorCode.SAME_AS_CURRENT_PASSWORD, exception.getErrorCode());
+        assertEquals("hashed", account.getHashedPassword());
+        then(passwordEncoder).should(never()).encode(any());
+    }
+
+    @Test
+    void resetPasswordByAdmin() {
+        AdminResetPasswordRequest request = new AdminResetPasswordRequest("new-password");
         UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(uuid))
@@ -588,12 +661,26 @@ class AccountServiceTest {
         given(passwordEncoder.encode(request.password()))
                 .willReturn("new-hashed-password");
 
-        Account result = accountService.updateAccountPassword(uuid, request);
+        Account result = accountService.resetPasswordByAdmin(uuid, request);
 
         assertEquals(account, result);
         assertEquals("new-hashed-password", result.getHashedPassword());
-        then(accountRepository).should().findByUuid(uuid);
-        then(passwordEncoder).should().encode(request.password());
+    }
+
+    @Test
+    void resetPasswordWithToken() {
+        ResetPasswordRequest request = new ResetPasswordRequest("new-password");
+        UUID uuid = UUID.randomUUID();
+
+        given(accountRepository.findByUuid(uuid))
+                .willReturn(Optional.of(account));
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("new-hashed-password");
+
+        Account result = accountService.resetPassword(uuid, request);
+
+        assertEquals(account, result);
+        assertEquals("new-hashed-password", result.getHashedPassword());
     }
 
     @Test

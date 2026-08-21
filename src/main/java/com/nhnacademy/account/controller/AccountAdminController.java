@@ -3,9 +3,9 @@ package com.nhnacademy.account.controller;
 import com.nhnacademy.account.security.AccountUUID;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.AdminResetPasswordRequest;
 import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.dto.response.AccountResponse;
 import com.nhnacademy.account.global.error.ErrorCode;
@@ -74,14 +74,14 @@ public class AccountAdminController {
     }
 
     @PutMapping("/{uuid}/pwd")
-    public ResponseEntity<ApiResponse<AccountResponse>> updateAccountPassword(
+    public ResponseEntity<ApiResponse<AccountResponse>> resetAccountPassword(
             @AccountUUID UUID requesterUuid,
             @PathVariable UUID uuid,
-            @Valid @RequestBody UpdateAccountPasswordRequest request
+            @Valid @RequestBody AdminResetPasswordRequest request
     ) {
         verifyAdmin(requesterUuid);
 
-        Account account = accountService.updateAccountPassword(uuid, request);
+        Account account = accountService.resetPasswordByAdmin(uuid, request);
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
