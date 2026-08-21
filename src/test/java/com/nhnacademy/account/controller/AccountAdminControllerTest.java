@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.AdminResetPasswordRequest;
 import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.domain.AccountStatusAction;
 import com.nhnacademy.account.service.AccountService;
 import org.junit.jupiter.api.AfterEach;
@@ -263,15 +263,15 @@ class AccountAdminControllerTest {
 
     @Test
     @DisplayName("PUT - 회원 비밀번호 수정")
-    void updateAccountPassword() throws Exception {
+    void resetAccountPassword() throws Exception {
         UUID uuid = UUID.randomUUID();
-        UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
+        AdminResetPasswordRequest request = new AdminResetPasswordRequest("new-password");
         Account account = persistedAccount("test", "test@test.com", "hashed", AccountRole.USER);
         Account admin = persistedAccount("admin", "admin@test.com", "hashed", AccountRole.ADMIN);
 
         given(accountService.findAccount(admin.getUuid()))
                 .willReturn(admin);
-        given(accountService.updateAccountPassword(uuid, request))
+        given(accountService.resetPasswordByAdmin(uuid, request))
                 .willReturn(account);
 
         authenticate(admin.getUuid());
@@ -300,7 +300,7 @@ class AccountAdminControllerTest {
                         )
                 ));
 
-        then(accountService).should().updateAccountPassword(uuid, request);
+        then(accountService).should().resetPasswordByAdmin(uuid, request);
     }
 
     @Test

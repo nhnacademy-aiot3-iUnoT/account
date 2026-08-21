@@ -185,7 +185,38 @@ public class AccountService {
     }
 
     @Transactional
-    public Account updateAccountPassword(UUID uuid, UpdateAccountPasswordRequest request) {
+    public Account changeOwnPassword(UUID uuid, ChangeOwnPasswordRequest request) {
+        Account account = findActiveAccount(uuid);
+
+        if (!passwordEncoder.matches(request.currentPassword(), account.getHashedPassword())) {
+            throw new BadRequestException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), account.getHashedPassword())) {
+            throw new BadRequestException(ErrorCode.SAME_AS_CURRENT_PASSWORD);
+        }
+
+        account.changeHashedPassword(passwordEncoder.encode(request.newPassword()));
+        return account;
+    }
+
+    @Transactional
+    public Account resetPasswordByAdmin(UUID uuid, AdminResetPasswordRequest request) {
+        return replacePassword(uuid, request.password());
+    }
+
+    @Transactional
+    public Account resetPassword(UUID uuid, ResetPasswordRequest request) {
+        return replacePassword(uuid, request.password());
+    }
+
+    private Account replacePassword(UUID uuid, String password) {
+        Account account = findActiveAccount(uuid);
+        account.changeHashedPassword(passwordEncoder.encode(password));
+        return account;
+    }
+
+    private Account findActiveAccount(UUID uuid) {
         Account account = accountRepository.findByUuid(uuid)
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
 
@@ -193,8 +224,6 @@ public class AccountService {
             throw new ConflictException(ErrorCode.INVALID_ACCOUNT_STATE);
         }
 
-        String hashedPassword = passwordEncoder.encode(request.password());
-        account.changeHashedPassword(hashedPassword);
         return account;
     }
 

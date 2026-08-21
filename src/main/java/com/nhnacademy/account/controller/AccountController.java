@@ -69,11 +69,11 @@ public class AccountController {
     }
 
     @PutMapping("/me/pwd")
-    public ResponseEntity<ApiResponse<AccountResponse>> updateAccountPassword(
+    public ResponseEntity<ApiResponse<AccountResponse>> changeOwnPassword(
             @AccountUUID UUID accountUuid,
-            @Valid @RequestBody UpdateAccountPasswordRequest request
+            @Valid @RequestBody ChangeOwnPasswordRequest request
     ) {
-        Account account = accountService.updateAccountPassword(accountUuid, request);
+        Account account = accountService.changeOwnPassword(accountUuid, request);
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
@@ -155,7 +155,7 @@ public class AccountController {
     @PostMapping("/pwd/reset/{token}")
     public ResponseEntity<?> passwordChange(
             @PathVariable("token") String token,
-            @Valid @RequestBody UpdateAccountPasswordRequest request
+            @Valid @RequestBody ResetPasswordRequest request
     ) {
         String emailPrefix = "pwd-reset:email:";
         String tokenKey = "pwd-reset:token:" + token;
@@ -167,7 +167,7 @@ public class AccountController {
 
         Account account = accountService.findAccountByEmail(email);
 
-        accountService.updateAccountPassword(account.getUuid(), request);
+        accountService.resetPassword(account.getUuid(), request);
 
         redisTemplate.delete(emailPrefix + email);
 
