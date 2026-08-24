@@ -10,6 +10,7 @@ import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.global.error.exception.ConflictException;
 import com.nhnacademy.account.global.error.exception.NotFoundException;
+import com.nhnacademy.account.global.util.EmailNormalizer;
 import com.nhnacademy.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -21,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -36,8 +36,9 @@ public class AccountService {
 
     @Transactional
     public void createAccount(CreateAccountRequest request) {
+        String email = EmailNormalizer.normalize(request.email());
         String hashedPassword = passwordEncoder.encode(request.password());
-        Account account = new Account(request.name(), request.email().toLowerCase(), hashedPassword);
+        Account account = new Account(request.name(), email, hashedPassword);
 
         if (accountRepository.existsByEmail(account.getEmail())) {
             throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -45,7 +46,7 @@ public class AccountService {
 
         InvitationsSignupRequest invitationRequest = new InvitationsSignupRequest(
                 request.inviteToken(),
-                request.email(),
+                email,
                 account.getUuid()
         );
         invitationClient.signup(invitationRequest);
@@ -70,8 +71,9 @@ public class AccountService {
 
     @Transactional
     public Account createAdminAccount(CreateAdminAccountRequest request) {
+        String email = EmailNormalizer.normalize(request.email());
         String hashedPassword = passwordEncoder.encode(request.password());
-        Account account = new Account(request.name(), request.email().toLowerCase(), hashedPassword, AccountRole.ADMIN);
+        Account account = new Account(request.name(), email, hashedPassword, AccountRole.ADMIN);
 
         if (accountRepository.existsByEmail(account.getEmail())) {
             throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
@@ -85,7 +87,7 @@ public class AccountService {
     }
 
     public boolean existsByEmail(String email) {
-        return accountRepository.existsByEmail(email);
+        return accountRepository.existsByEmail(EmailNormalizer.normalize(email));
     }
 
     public Account findAccount(UUID uuid) {
@@ -94,12 +96,12 @@ public class AccountService {
     }
 
     public Account findAccountByEmail(String email) {
-        return accountRepository.findByEmail(email.toLowerCase())
+        return accountRepository.findByEmail(EmailNormalizer.normalize(email))
                 .orElseThrow(() -> new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND));
     }
 
     public List<Account> findAllByEmail(String email) {
-        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        String normalizedEmail = EmailNormalizer.normalize(email);
 
         if (normalizedEmail.contains("@")) {
             Account account = accountRepository
@@ -263,7 +265,7 @@ public class AccountService {
     }
 
     public boolean availableEmail(EmailAvailabilityRequest request) {
-        return !accountRepository.existsByEmail(request.email());
+        return !accountRepository.existsByEmail(EmailNormalizer.normalize(request.email()));
     }
 
     public boolean availablePassword(UUID uuid, PasswordReuseCheckRequest request) {
