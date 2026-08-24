@@ -14,6 +14,7 @@ import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.service.AccountService;
 import com.nhnacademy.account.global.util.ApiResponse;
+import com.nhnacademy.account.global.util.EmailNormalizer;
 import com.nhnacademy.account.service.EmailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -116,7 +117,7 @@ public class AccountController {
             @Valid @RequestBody ResetPasswordTokenRequest request,
             SecureRandom random
     ) {
-        String email = request.email().trim().toLowerCase();
+        String email = EmailNormalizer.normalize(request.email());
         String emailKey = "pwd-reset:email:" + email;
         String tokenPrefix = "pwd-reset:token:";
 

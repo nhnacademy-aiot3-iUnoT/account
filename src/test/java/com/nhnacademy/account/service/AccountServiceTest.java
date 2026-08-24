@@ -109,6 +109,37 @@ class AccountServiceTest {
     }
 
     @Test
+    void createAccountUsesNormalizedEmailForPersistenceAndInvitation() {
+        Locale originalLocale = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+        CreateAccountRequest request = new CreateAccountRequest(
+                UUID.randomUUID(),
+                "test",
+                "  I@Test.COM  ",
+                "password"
+        );
+
+        try {
+            given(accountRepository.existsByEmail("i@test.com"))
+                    .willReturn(false);
+            given(passwordEncoder.encode(request.password()))
+                    .willReturn("hashed");
+
+            accountService.createAccount(request);
+
+            ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
+            ArgumentCaptor<InvitationsSignupRequest> invitationCaptor =
+                    ArgumentCaptor.forClass(InvitationsSignupRequest.class);
+            then(accountRepository).should().saveAndFlush(accountCaptor.capture());
+            then(invitationClient).should().signup(invitationCaptor.capture());
+            assertEquals("i@test.com", accountCaptor.getValue().getEmail());
+            assertEquals("i@test.com", invitationCaptor.getValue().email());
+        } finally {
+            Locale.setDefault(originalLocale);
+        }
+    }
+
+    @Test
     void createAccountWithExistingEmail() {
         CreateAccountRequest request = new CreateAccountRequest(
                 UUID.randomUUID(),
@@ -304,6 +335,27 @@ class AccountServiceTest {
     }
 
     @Test
+    void createAdminAccountNormalizesEmail() {
+        CreateAdminAccountRequest request = new CreateAdminAccountRequest(
+                "admin",
+                "  ADMIN@Test.COM  ",
+                "password"
+        );
+
+        given(accountRepository.existsByEmail("admin@test.com"))
+                .willReturn(false);
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("hashed");
+        given(accountRepository.save(any(Account.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        Account result = accountService.createAdminAccount(request);
+
+        assertEquals("admin@test.com", result.getEmail());
+        then(accountRepository).should().existsByEmail("admin@test.com");
+    }
+
+    @Test
     void changeAccountStatus() {
         UUID uuid = UUID.randomUUID();
         ChangeAccountStatusRequest request = new ChangeAccountStatusRequest(AccountStatusAction.DEACTIVATE, uuid.toString());
@@ -344,6 +396,20 @@ class AccountServiceTest {
         then(accountRepository)
                 .should()
                 .findByUuid(any(UUID.class));
+    }
+
+    @Test
+    void emailLookupMethodsNormalizeEmail() {
+        given(accountRepository.existsByEmail("test@test.com"))
+                .willReturn(true);
+        given(accountRepository.findByEmail("test@test.com"))
+                .willReturn(Optional.of(account));
+
+        assertTrue(accountService.existsByEmail("  TEST@Test.COM  "));
+        assertSame(account, accountService.findAccountByEmail("  TEST@Test.COM  "));
+
+        then(accountRepository).should().existsByEmail("test@test.com");
+        then(accountRepository).should().findByEmail("test@test.com");
     }
 
     @Test
@@ -790,12 +856,14 @@ class AccountServiceTest {
 
     @Test
     void availableEmailFalseTest() {
-        EmailAvailabilityRequest request = new EmailAvailabilityRequest("test@test.com");
+        EmailAvailabilityRequest request = new EmailAvailabilityRequest("  TEST@Test.COM  ");
 
-        given(accountRepository.existsByEmail(any(String.class)))
+        given(accountRepository.existsByEmail("test@test.com"))
                 .willReturn(true);
 
         assertFalse(accountService.availableEmail(request));
+
+        then(accountRepository).should().existsByEmail("test@test.com");
 
     }
 
