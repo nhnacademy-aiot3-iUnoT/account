@@ -11,7 +11,10 @@ import com.nhnacademy.account.dto.request.ResetPasswordTokenRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
+import com.nhnacademy.account.global.error.ErrorCode;
+import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.service.AccountService;
+import com.nhnacademy.account.service.PasswordResetService;
 import com.nhnacademy.account.service.ReactivationService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
@@ -19,11 +22,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
@@ -36,17 +36,15 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -73,13 +71,10 @@ class AccountControllerTest {
     private AccountService accountService;
 
     @MockitoBean
+    private PasswordResetService passwordResetService;
+
+    @MockitoBean
     private ReactivationService reactivationService;
-
-    @MockitoBean
-    private RedisTemplate<String, String> redisTemplate;
-
-    @MockitoBean
-    private ValueOperations<String, String> valueOperations;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -90,8 +85,6 @@ class AccountControllerTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(context)
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
-
-        given(redisTemplate.opsForValue()).willReturn(valueOperations);
 
         accountList = List.of(
                 persistedAccount("test", "test@test.com", "hashed"),
@@ -479,8 +472,6 @@ class AccountControllerTest {
         String email = "test@test.com";
         ResetPasswordTokenRequest request = new ResetPasswordTokenRequest(email);
 
-        given(accountService.existsByEmail(email)).willReturn(true);
-
         mockMvc.perform(post("/api/accounts/pwd")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -498,27 +489,14 @@ class AccountControllerTest {
                         )
                 ));
 
-        ArgumentCaptor<String> tokenKeyCaptor = ArgumentCaptor.forClass(String.class);
-        Duration ttl = Duration.ofMinutes(5);
-        then(valueOperations).should().set(tokenKeyCaptor.capture(), eq(email), eq(ttl));
-
-        String tokenKey = tokenKeyCaptor.getValue();
-        assertTrue(tokenKey.matches("pwd-reset:token:[0-9a-f]{64}"));
-        String token = tokenKey.substring("pwd-reset:token:".length());
-        then(valueOperations).should().set("pwd-reset:email:" + email, token, ttl);
+        then(passwordResetService).should().request(email);
     }
 
     @Test
     @DisplayName("POST - 비밀번호 재설정")
     void resetPasswordWithValidToken() throws Exception {
         String token = "a".repeat(64);
-        String email = "test@test.com";
-        Account account = accountList.getFirst();
         UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
-
-        given(valueOperations.getAndDelete("pwd-reset:token:" + token)).willReturn(email);
-        given(accountService.findAccountByEmail(email)).willReturn(account);
-        given(accountService.updateAccountPassword(account.getUuid(), request)).willReturn(account);
 
         mockMvc.perform(post("/api/accounts/pwd/reset/{token}", token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -537,9 +515,7 @@ class AccountControllerTest {
                         )
                 ));
 
-        then(accountService).should().findAccountByEmail(email);
-        then(accountService).should().updateAccountPassword(account.getUuid(), request);
-        then(redisTemplate).should().delete("pwd-reset:email:" + email);
+        then(passwordResetService).should().reset(token, request);
     }
 
     @Test
@@ -548,14 +524,16 @@ class AccountControllerTest {
         String token = "b".repeat(64);
         UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
 
-        given(valueOperations.getAndDelete("pwd-reset:token:" + token)).willReturn(null);
+        willThrow(new BadRequestException(ErrorCode.INVALID_VERIFICATION_TOKEN))
+                .given(passwordResetService)
+                .reset(token, request);
 
         mockMvc.perform(post("/api/accounts/pwd/reset/{token}", token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("A001"))
+                .andExpect(jsonPath("$.error.code").value("A009"))
                 .andDo(document("reset-password-invalid-token",
                         requestFields(
                                 fieldWithPath("password").description("변경할 새 비밀번호")
