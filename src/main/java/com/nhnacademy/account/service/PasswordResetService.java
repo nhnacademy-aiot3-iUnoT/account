@@ -1,7 +1,7 @@
 package com.nhnacademy.account.service;
 
 import com.nhnacademy.account.domain.Account;
-import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
+import com.nhnacademy.account.dto.request.ResetPasswordRequest;
 import com.nhnacademy.account.event.MailSendRequestedEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -49,12 +49,12 @@ public class PasswordResetService {
 
     public void reset(
             String token,
-            UpdateAccountPasswordRequest request
+            ResetPasswordRequest request
     ) {
         String email = tokenService.consume(token);
         Account account = accountService.findAccountByEmail(email);
 
-        accountService.updateAccountPassword(account.getUuid(), request);
+        accountService.resetPassword(account.getUuid(), request);
     }
 
     private String normalizeEmail(String email) {

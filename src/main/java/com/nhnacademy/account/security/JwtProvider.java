@@ -2,6 +2,7 @@ package com.nhnacademy.account.security;
 
 import com.nhnacademy.account.config.JwtProperties;
 import com.nhnacademy.account.domain.AccountRole;
+import com.nhnacademy.account.domain.AccountStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -23,7 +24,11 @@ public class JwtProvider {
     private final JwtProperties properties;
     private final Clock clock;
 
-    public String createAccessToken(UUID accountUuid, AccountRole role) {
+    public String createAccessToken(
+            UUID accountUuid,
+            AccountRole role,
+            AccountStatus status
+    ) {
         Instant issuedAt = clock.instant();
         Instant expiresAt = issuedAt.plus(properties.getAccessTokenTtl());
 
@@ -41,6 +46,7 @@ public class JwtProvider {
                 .issuedAt(issuedAt)
                 .expiresAt(expiresAt)
                 .claim("roles", List.of(role.name()))
+                .claim("account_status", status.name())
                 .build();
 
         Jwt jwt = jwtEncoder.encode(

@@ -3,13 +3,14 @@ package com.nhnacademy.account.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountRole;
+import com.nhnacademy.account.dto.request.ChangeOwnPasswordRequest;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.request.ReactivationConfirmRequest;
+import com.nhnacademy.account.dto.request.ResetPasswordRequest;
 import com.nhnacademy.account.dto.request.ResetPasswordTokenRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
@@ -279,11 +280,14 @@ class AccountControllerTest {
 
     @Test
     @DisplayName("PUT - 비밀번호 수정")
-    void updateAccountPassword() throws Exception {
-        UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
+    void changeOwnPassword() throws Exception {
+        ChangeOwnPasswordRequest request = new ChangeOwnPasswordRequest(
+                "current-password",
+                "new-password"
+        );
         Account account = accountList.getFirst();
 
-        given(accountService.updateAccountPassword(account.getUuid(), request))
+        given(accountService.changeOwnPassword(account.getUuid(), request))
                 .willReturn(account);
 
         authenticate(account.getUuid());
@@ -297,7 +301,8 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.data.hashedPassword").doesNotExist())
                 .andDo(document("update-account-password",
                         requestFields(
-                                fieldWithPath("password").description("변경할 비밀번호")
+                                fieldWithPath("currentPassword").description("현재 비밀번호"),
+                                fieldWithPath("newPassword").description("변경할 새 비밀번호")
                         ),
                         responseFields(
                                 fieldWithPath("success").description("요청 성공 여부"),
@@ -315,7 +320,7 @@ class AccountControllerTest {
                         )
                 ));
 
-        then(accountService).should().updateAccountPassword(account.getUuid(), request);
+        then(accountService).should().changeOwnPassword(account.getUuid(), request);
     }
 
     private Account persistedAccount(String name, String email, String hashedPassword) {
@@ -496,7 +501,7 @@ class AccountControllerTest {
     @DisplayName("POST - 비밀번호 재설정")
     void resetPasswordWithValidToken() throws Exception {
         String token = "a".repeat(64);
-        UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
+        ResetPasswordRequest request = new ResetPasswordRequest("new-password");
 
         mockMvc.perform(post("/api/accounts/pwd/reset/{token}", token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -522,7 +527,7 @@ class AccountControllerTest {
     @DisplayName("POST - 유효하지 않은 비밀번호 재설정 토큰 거부")
     void rejectInvalidPasswordResetToken() throws Exception {
         String token = "b".repeat(64);
-        UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
+        ResetPasswordRequest request = new ResetPasswordRequest("new-password");
 
         willThrow(new BadRequestException(ErrorCode.INVALID_VERIFICATION_TOKEN))
                 .given(passwordResetService)

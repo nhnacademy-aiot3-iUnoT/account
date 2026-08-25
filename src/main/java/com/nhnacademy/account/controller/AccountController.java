@@ -60,11 +60,11 @@ public class AccountController {
     }
 
     @PutMapping("/me/pwd")
-    public ResponseEntity<ApiResponse<AccountResponse>> updateAccountPassword(
+    public ResponseEntity<ApiResponse<AccountResponse>> changeOwnPassword(
             @AccountUUID UUID accountUuid,
-            @Valid @RequestBody UpdateAccountPasswordRequest request
+            @Valid @RequestBody ChangeOwnPasswordRequest request
     ) {
-        Account account = accountService.updateAccountPassword(accountUuid, request);
+        Account account = accountService.changeOwnPassword(accountUuid, request);
         return ResponseEntity.ok(ApiResponse.success(AccountResponse.from(account)));
     }
 
@@ -114,7 +114,7 @@ public class AccountController {
     @PostMapping("/pwd/reset/{token}")
     public ResponseEntity<ApiResponse<Void>> resetPassword(
             @PathVariable("token") String token,
-            @Valid @RequestBody UpdateAccountPasswordRequest request
+            @Valid @RequestBody ResetPasswordRequest request
     ) {
         passwordResetService.reset(token, request);
 
