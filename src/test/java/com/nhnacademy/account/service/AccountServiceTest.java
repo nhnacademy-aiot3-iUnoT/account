@@ -3,15 +3,17 @@ package com.nhnacademy.account.service;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.domain.AccountStatus;
 import com.nhnacademy.account.domain.AccountStatusAction;
+import com.nhnacademy.account.dto.request.AdminResetPasswordRequest;
 import com.nhnacademy.account.dto.request.ChangeAccountStatusRequest;
+import com.nhnacademy.account.dto.request.ChangeOwnPasswordRequest;
 import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.InvitationsSignupRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
+import com.nhnacademy.account.dto.request.ResetPasswordRequest;
 import com.nhnacademy.account.dto.request.SignupCompensateRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
-import com.nhnacademy.account.dto.request.UpdateAccountPasswordRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.dto.response.InternalAccountInfoResponse;
 import com.nhnacademy.account.global.client.InvitationClient;
@@ -104,6 +106,37 @@ class AccountServiceTest {
         then(invitationClient)
                 .should()
                 .signup(any());
+    }
+
+    @Test
+    void createAccountUsesNormalizedEmailForPersistenceAndInvitation() {
+        Locale originalLocale = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+        CreateAccountRequest request = new CreateAccountRequest(
+                UUID.randomUUID(),
+                "test",
+                "  I@Test.COM  ",
+                "password"
+        );
+
+        try {
+            given(accountRepository.existsByEmail("i@test.com"))
+                    .willReturn(false);
+            given(passwordEncoder.encode(request.password()))
+                    .willReturn("hashed");
+
+            accountService.createAccount(request);
+
+            ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
+            ArgumentCaptor<InvitationsSignupRequest> invitationCaptor =
+                    ArgumentCaptor.forClass(InvitationsSignupRequest.class);
+            then(accountRepository).should().saveAndFlush(accountCaptor.capture());
+            then(invitationClient).should().signup(invitationCaptor.capture());
+            assertEquals("i@test.com", accountCaptor.getValue().getEmail());
+            assertEquals("i@test.com", invitationCaptor.getValue().email());
+        } finally {
+            Locale.setDefault(originalLocale);
+        }
     }
 
     @Test
@@ -302,6 +335,27 @@ class AccountServiceTest {
     }
 
     @Test
+    void createAdminAccountNormalizesEmail() {
+        CreateAdminAccountRequest request = new CreateAdminAccountRequest(
+                "admin",
+                "  ADMIN@Test.COM  ",
+                "password"
+        );
+
+        given(accountRepository.existsByEmail("admin@test.com"))
+                .willReturn(false);
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("hashed");
+        given(accountRepository.save(any(Account.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+
+        Account result = accountService.createAdminAccount(request);
+
+        assertEquals("admin@test.com", result.getEmail());
+        then(accountRepository).should().existsByEmail("admin@test.com");
+    }
+
+    @Test
     void changeAccountStatus() {
         UUID uuid = UUID.randomUUID();
         ChangeAccountStatusRequest request = new ChangeAccountStatusRequest(AccountStatusAction.DEACTIVATE, uuid.toString());
@@ -363,6 +417,20 @@ class AccountServiceTest {
         then(accountRepository)
                 .should()
                 .findByUuid(any(UUID.class));
+    }
+
+    @Test
+    void emailLookupMethodsNormalizeEmail() {
+        given(accountRepository.existsByEmail("test@test.com"))
+                .willReturn(true);
+        given(accountRepository.findByEmail("test@test.com"))
+                .willReturn(Optional.of(account));
+
+        assertTrue(accountService.existsByEmail("  TEST@Test.COM  "));
+        assertSame(account, accountService.findAccountByEmail("  TEST@Test.COM  "));
+
+        then(accountRepository).should().existsByEmail("test@test.com");
+        then(accountRepository).should().findByEmail("test@test.com");
     }
 
     @Test
@@ -600,8 +668,79 @@ class AccountServiceTest {
     }
 
     @Test
-    void updateAccountPassword() {
-        UpdateAccountPasswordRequest request = new UpdateAccountPasswordRequest("new-password");
+    void changeOwnPassword() {
+        ChangeOwnPasswordRequest request = new ChangeOwnPasswordRequest(
+                "current-password",
+                "new-password"
+        );
+        UUID uuid = UUID.randomUUID();
+
+        given(accountRepository.findByUuid(uuid))
+                .willReturn(Optional.of(account));
+        given(passwordEncoder.matches(request.currentPassword(), account.getHashedPassword()))
+                .willReturn(true);
+        given(passwordEncoder.matches(request.newPassword(), account.getHashedPassword()))
+                .willReturn(false);
+        given(passwordEncoder.encode(request.newPassword()))
+                .willReturn("new-hashed-password");
+
+        Account result = accountService.changeOwnPassword(uuid, request);
+
+        assertEquals(account, result);
+        assertEquals("new-hashed-password", result.getHashedPassword());
+        then(accountRepository).should().findByUuid(uuid);
+        then(passwordEncoder).should().encode(request.newPassword());
+    }
+
+    @Test
+    void changeOwnPasswordWithWrongCurrentPassword() {
+        ChangeOwnPasswordRequest request = new ChangeOwnPasswordRequest(
+                "wrong-password",
+                "new-password"
+        );
+        UUID uuid = UUID.randomUUID();
+
+        given(accountRepository.findByUuid(uuid))
+                .willReturn(Optional.of(account));
+        given(passwordEncoder.matches(request.currentPassword(), account.getHashedPassword()))
+                .willReturn(false);
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> accountService.changeOwnPassword(uuid, request)
+        );
+
+        assertEquals(ErrorCode.PASSWORD_MISMATCH, exception.getErrorCode());
+        assertEquals("hashed", account.getHashedPassword());
+        then(passwordEncoder).should(never()).encode(any());
+    }
+
+    @Test
+    void changeOwnPasswordWithSamePassword() {
+        ChangeOwnPasswordRequest request = new ChangeOwnPasswordRequest(
+                "current-password",
+                "current-password"
+        );
+        UUID uuid = UUID.randomUUID();
+
+        given(accountRepository.findByUuid(uuid))
+                .willReturn(Optional.of(account));
+        given(passwordEncoder.matches(request.currentPassword(), account.getHashedPassword()))
+                .willReturn(true);
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> accountService.changeOwnPassword(uuid, request)
+        );
+
+        assertEquals(ErrorCode.SAME_AS_CURRENT_PASSWORD, exception.getErrorCode());
+        assertEquals("hashed", account.getHashedPassword());
+        then(passwordEncoder).should(never()).encode(any());
+    }
+
+    @Test
+    void resetPasswordByAdmin() {
+        AdminResetPasswordRequest request = new AdminResetPasswordRequest("new-password");
         UUID uuid = UUID.randomUUID();
 
         given(accountRepository.findByUuid(uuid))
@@ -609,12 +748,26 @@ class AccountServiceTest {
         given(passwordEncoder.encode(request.password()))
                 .willReturn("new-hashed-password");
 
-        Account result = accountService.updateAccountPassword(uuid, request);
+        Account result = accountService.resetPasswordByAdmin(uuid, request);
 
         assertEquals(account, result);
         assertEquals("new-hashed-password", result.getHashedPassword());
-        then(accountRepository).should().findByUuid(uuid);
-        then(passwordEncoder).should().encode(request.password());
+    }
+
+    @Test
+    void resetPasswordWithToken() {
+        ResetPasswordRequest request = new ResetPasswordRequest("new-password");
+        UUID uuid = UUID.randomUUID();
+
+        given(accountRepository.findByUuid(uuid))
+                .willReturn(Optional.of(account));
+        given(passwordEncoder.encode(request.password()))
+                .willReturn("new-hashed-password");
+
+        Account result = accountService.resetPassword(uuid, request);
+
+        assertEquals(account, result);
+        assertEquals("new-hashed-password", result.getHashedPassword());
     }
 
     @Test
@@ -724,12 +877,14 @@ class AccountServiceTest {
 
     @Test
     void availableEmailFalseTest() {
-        EmailAvailabilityRequest request = new EmailAvailabilityRequest("test@test.com");
+        EmailAvailabilityRequest request = new EmailAvailabilityRequest("  TEST@Test.COM  ");
 
-        given(accountRepository.existsByEmail(any(String.class)))
+        given(accountRepository.existsByEmail("test@test.com"))
                 .willReturn(true);
 
         assertFalse(accountService.availableEmail(request));
+
+        then(accountRepository).should().existsByEmail("test@test.com");
 
     }
 

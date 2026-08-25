@@ -8,14 +8,15 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class InvitationClient {
-    private static final String INVITATION_SERVICE = "/api/core/internal/invitations";
-    private final InventoryClient inventoryClient;
+    private static final String INTERNAL_INVITATIONS_API = "/api/core/internal/invitations";
 
-    public void signup(InvitationsSignupRequest invitationsSignupRequest) {
-        inventoryClient.post(INVITATION_SERVICE + "/use", invitationsSignupRequest);
+    private final InventoryApiClient inventoryApiClient;
+
+    public void signup(InvitationsSignupRequest request) {
+        inventoryApiClient.post(INTERNAL_INVITATIONS_API + "/use", request);
     }
 
     public void compensate(SignupCompensateRequest request) {
-        inventoryClient.post(INVITATION_SERVICE + "/compensate", request);
+        inventoryApiClient.post(INTERNAL_INVITATIONS_API + "/compensate", request);
     }
 }
