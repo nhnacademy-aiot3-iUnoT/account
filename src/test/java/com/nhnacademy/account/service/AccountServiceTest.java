@@ -10,6 +10,7 @@ import com.nhnacademy.account.dto.request.CreateAdminAccountRequest;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.InvitationsSignupRequest;
+import com.nhnacademy.account.dto.request.LeaveOrgRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.request.ResetPasswordRequest;
 import com.nhnacademy.account.dto.request.SignupCompensateRequest;
@@ -17,6 +18,7 @@ import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.dto.response.InternalAccountInfoResponse;
 import com.nhnacademy.account.global.client.InvitationClient;
+import com.nhnacademy.account.global.client.OrganizationClient;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.global.error.exception.ConflictException;
@@ -55,6 +57,9 @@ class AccountServiceTest {
 
     @Mock
     private InvitationClient invitationClient;
+
+    @Mock
+    private OrganizationClient organizationClient;
 
     @InjectMocks
     private AccountService accountService;
@@ -752,16 +757,24 @@ class AccountServiceTest {
     @Test
     void withdrawAccount() {
         WithdrawAccountRequest request = new WithdrawAccountRequest("password");
-        UUID uuid = UUID.randomUUID();
+        UUID uuid = account.getUuid();
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.of(account));
 
         given(passwordEncoder.matches(request.password(), account.getHashedPassword()))
                 .willReturn(true);
+        willAnswer(invocation -> {
+            assertFalse(account.isWithdrawn());
+            return null;
+        }).given(organizationClient).leaveOrganization(any(LeaveOrgRequest.class));
 
         accountService.withdrawAccount(uuid, request);
 
+        then(organizationClient).should().leaveOrganization(
+                new LeaveOrgRequest(uuid, "test@test.com")
+        );
+        assertTrue(account.isWithdrawn());
         assertNull(account.getEmail());
         assertNull(account.getHashedPassword());
         assertEquals("test", account.getName());
@@ -770,7 +783,7 @@ class AccountServiceTest {
     @Test
     void withdrawAccountWithWrongPassword() {
         WithdrawAccountRequest request = new WithdrawAccountRequest("wrong-password");
-        UUID uuid = UUID.randomUUID();
+        UUID uuid = account.getUuid();
 
         given(accountRepository.findByUuid(any(UUID.class)))
                 .willReturn(Optional.of(account));
@@ -784,6 +797,32 @@ class AccountServiceTest {
         );
 
         assertEquals(ErrorCode.PASSWORD_MISMATCH, exception.getErrorCode());
+        assertEquals("test@test.com", account.getEmail());
+        assertEquals("hashed", account.getHashedPassword());
+        then(organizationClient).shouldHaveNoInteractions();
+    }
+
+    @Test
+    void withdrawAccountKeepsAccountWhenInventoryCallFails() {
+        WithdrawAccountRequest request = new WithdrawAccountRequest("password");
+        UUID uuid = account.getUuid();
+        UpstreamServiceException inventoryException =
+                new UpstreamServiceException("inventory unavailable");
+
+        given(accountRepository.findByUuid(uuid)).willReturn(Optional.of(account));
+        given(passwordEncoder.matches(request.password(), account.getHashedPassword()))
+                .willReturn(true);
+        willThrow(inventoryException).given(organizationClient).leaveOrganization(
+                new LeaveOrgRequest(uuid, "test@test.com")
+        );
+
+        UpstreamServiceException result = assertThrows(
+                UpstreamServiceException.class,
+                () -> accountService.withdrawAccount(uuid, request)
+        );
+
+        assertSame(inventoryException, result);
+        assertFalse(account.isWithdrawn());
         assertEquals("test@test.com", account.getEmail());
         assertEquals("hashed", account.getHashedPassword());
     }
