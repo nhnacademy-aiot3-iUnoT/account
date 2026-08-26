@@ -36,15 +36,24 @@ public class PasswordResetService {
             return;
         }
 
-        String token = tokenService.issue(email);
+        if (!tokenService.tryAcquireIssueCooldown(email)) {
+            return;
+        }
 
-        eventPublisher.publishEvent(
-                new MailSendRequestedEvent(
-                        email,
-                        "비밀번호 초기화 메일",
-                        frontBaseUrl + "/pwd/" + token
-                )
-        );
+        try {
+            String token = tokenService.issue(email);
+
+            eventPublisher.publishEvent(
+                    new MailSendRequestedEvent(
+                            email,
+                            "비밀번호 초기화 메일",
+                            frontBaseUrl + "/pwd/" + token
+                    )
+            );
+        } catch (RuntimeException exception) {
+            releaseIssueCooldown(email, exception);
+            throw exception;
+        }
     }
 
     public void reset(
@@ -59,5 +68,16 @@ public class PasswordResetService {
 
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private void releaseIssueCooldown(
+            String email,
+            RuntimeException requestException
+    ) {
+        try {
+            tokenService.releaseIssueCooldown(email);
+        } catch (RuntimeException releaseException) {
+            requestException.addSuppressed(releaseException);
+        }
     }
 }

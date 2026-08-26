@@ -17,10 +17,26 @@ public class ReactivationTokenService {
 
     static final String TOKEN_PREFIX = "reactivation:token:";
     static final String ACCOUNT_PREFIX = "reactivation:account:";
+    static final String ISSUE_COOLDOWN_PREFIX = "reactivation:cooldown:";
     static final Duration TOKEN_TTL = Duration.ofMinutes(10);
+    static final Duration ISSUE_COOLDOWN_TTL = Duration.ofSeconds(30);
 
     private final StringRedisTemplate redisTemplate;
     private final SecureRandom secureRandom;
+
+    public boolean tryAcquireIssueCooldown(UUID accountUuid) {
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(
+                ISSUE_COOLDOWN_PREFIX + accountUuid,
+                "1",
+                ISSUE_COOLDOWN_TTL
+        );
+
+        return Boolean.TRUE.equals(acquired);
+    }
+
+    public void releaseIssueCooldown(UUID accountUuid) {
+        redisTemplate.delete(ISSUE_COOLDOWN_PREFIX + accountUuid);
+    }
 
     public String issue(UUID accountUuid) {
         String accountKey = ACCOUNT_PREFIX + accountUuid;

@@ -38,19 +38,39 @@ public class ReactivationService {
             throw new ConflictException(ErrorCode.INVALID_ACCOUNT_STATE);
         }
 
-        String token = tokenService.issue(accountUuid);
+        if (!tokenService.tryAcquireIssueCooldown(accountUuid)) {
+            return;
+        }
 
-        eventPublisher.publishEvent(
-                new MailSendRequestedEvent(
-                        account.getEmail(),
-                        "계정 재활성화 인증",
-                        frontBaseUrl + "/reactivation?token=" + token
-                )
-        );
+        try {
+            String token = tokenService.issue(accountUuid);
+
+            eventPublisher.publishEvent(
+                    new MailSendRequestedEvent(
+                            account.getEmail(),
+                            "계정 재활성화 인증",
+                            frontBaseUrl + "/reactivation?token=" + token
+                    )
+            );
+        } catch (RuntimeException exception) {
+            releaseIssueCooldown(accountUuid, exception);
+            throw exception;
+        }
     }
 
     public Account confirm(UUID accountUuid, String token) {
         tokenService.consume(accountUuid, token);
         return accountService.reactivateAccount(accountUuid);
+    }
+
+    private void releaseIssueCooldown(
+            UUID accountUuid,
+            RuntimeException requestException
+    ) {
+        try {
+            tokenService.releaseIssueCooldown(accountUuid);
+        } catch (RuntimeException releaseException) {
+            requestException.addSuppressed(releaseException);
+        }
     }
 }

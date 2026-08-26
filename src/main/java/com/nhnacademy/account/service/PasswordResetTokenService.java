@@ -16,10 +16,26 @@ public class PasswordResetTokenService {
 
     static final String TOKEN_PREFIX = "pwd-reset:token:";
     static final String EMAIL_PREFIX = "pwd-reset:email:";
+    static final String ISSUE_COOLDOWN_PREFIX = "pwd-reset:cooldown:";
     static final Duration TOKEN_TTL = Duration.ofMinutes(5);
+    static final Duration ISSUE_COOLDOWN_TTL = Duration.ofMinutes(1);
 
     private final StringRedisTemplate redisTemplate;
     private final SecureRandom secureRandom;
+
+    public boolean tryAcquireIssueCooldown(String email) {
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(
+                ISSUE_COOLDOWN_PREFIX + email,
+                "1",
+                ISSUE_COOLDOWN_TTL
+        );
+
+        return Boolean.TRUE.equals(acquired);
+    }
+
+    public void releaseIssueCooldown(String email) {
+        redisTemplate.delete(ISSUE_COOLDOWN_PREFIX + email);
+    }
 
     public String issue(String email) {
         String emailKey = EMAIL_PREFIX + email;
