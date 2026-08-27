@@ -1,8 +1,6 @@
 package com.nhnacademy.account.controller;
 
 import com.nhnacademy.account.dto.request.*;
-import com.nhnacademy.account.global.error.ErrorCode;
-import com.nhnacademy.account.global.error.exception.NotFoundException;
 import com.nhnacademy.account.security.AccountUUID;
 import com.nhnacademy.account.domain.Account;
 import com.nhnacademy.account.dto.response.AccountResponse;
@@ -14,19 +12,14 @@ import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
 import com.nhnacademy.account.service.AccountService;
 import com.nhnacademy.account.global.util.ApiResponse;
-import com.nhnacademy.account.global.util.EmailNormalizer;
-import com.nhnacademy.account.service.EmailService;
+import com.nhnacademy.account.service.PasswordResetService;
+import com.nhnacademy.account.service.ReactivationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.SecureRandom;
-import java.time.Duration;
-import java.util.HexFormat;
 import java.util.UUID;
 
 
@@ -35,11 +28,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AccountController {
     private final AccountService accountService;
-    private final EmailService emailService;
-    private final RedisTemplate<String, String> redisTemplate;
-
-    @Value("${nhn.server-host}")
-    private String BASE_URL;
+    private final PasswordResetService passwordResetService;
+    private final ReactivationService reactivationService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<?>> createAccount(
@@ -113,68 +103,45 @@ public class AccountController {
     }
 
     @PostMapping("/pwd")
-    public ResponseEntity<?> passwordResetToken(
-            @Valid @RequestBody ResetPasswordTokenRequest request,
-            SecureRandom random
+    public ResponseEntity<ApiResponse<Void>> requestPasswordReset(
+            @Valid @RequestBody ResetPasswordTokenRequest request
     ) {
-        String email = EmailNormalizer.normalize(request.email());
-        String emailKey = "pwd-reset:email:" + email;
-        String tokenPrefix = "pwd-reset:token:";
+        passwordResetService.request(request.email());
 
-        if (!accountService.existsByEmail(email)) {
-            throw new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
-        }
-
-
-        String oldToken = redisTemplate.opsForValue().get(emailKey);
-        if (oldToken != null) {
-            redisTemplate.delete("pwd-reset:token:" + oldToken);
-        }
-
-        byte[] tokenBytes = new byte[32];
-        random.nextBytes(tokenBytes);
-        String token = HexFormat.of().formatHex(tokenBytes);
-        Duration ttl = Duration.ofMinutes(5);
-
-        redisTemplate.opsForValue().set(
-                tokenPrefix + token,
-                email,
-                ttl
-        );
-        redisTemplate.opsForValue().set(emailKey, token, ttl);
-
-        emailService.sendText(
-                email,
-                "비밀번호 초기화 메일",
-                BASE_URL + "/pwd/" + token
-        );
-
-
-        return ResponseEntity.ok(ApiResponse.ok());
+        return ResponseEntity.accepted().body(ApiResponse.ok());
     }
 
     @PostMapping("/pwd/reset/{token}")
-    public ResponseEntity<?> passwordChange(
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
             @PathVariable("token") String token,
             @Valid @RequestBody ResetPasswordRequest request
     ) {
-        String emailPrefix = "pwd-reset:email:";
-        String tokenKey = "pwd-reset:token:" + token;
-
-        String email = redisTemplate.opsForValue().getAndDelete(tokenKey);
-        if (email == null) {
-            throw new NotFoundException(ErrorCode.ACCOUNT_NOT_FOUND);
-        }
-
-        Account account = accountService.findAccountByEmail(email);
-
-        accountService.resetPassword(account.getUuid(), request);
-
-        redisTemplate.delete(emailPrefix + email);
+        passwordResetService.reset(token, request);
 
         return ResponseEntity.ok(ApiResponse.ok());
-
     }
 
+    @PostMapping("/me/reactivation/verification")
+    public ResponseEntity<ApiResponse<Void>> requestReactivationVerification(
+            @AccountUUID UUID accountUuid
+    ) {
+        reactivationService.requestVerification(accountUuid);
 
+        return ResponseEntity.accepted().body(ApiResponse.ok());
+    }
+
+    @PostMapping("/me/reactivation/confirm")
+    public ResponseEntity<ApiResponse<AccountResponse>> confirmReactivation(
+            @AccountUUID UUID accountUuid,
+            @Valid @RequestBody ReactivationConfirmRequest request
+    ) {
+        Account account = reactivationService.confirm(
+                accountUuid,
+                request.token()
+        );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(AccountResponse.from(account))
+        );
+    }
 }

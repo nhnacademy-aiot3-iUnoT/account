@@ -46,7 +46,11 @@ class AuthServiceTest {
                     .willReturn(Optional.of(account));
             given(passwordEncoder.matches(request.password(), account.getHashedPassword()))
                     .willReturn(true);
-            given(jwtProvider.createAccessToken(account.getUuid(), account.getAccountRole()))
+            given(jwtProvider.createAccessToken(
+                    account.getUuid(),
+                    account.getAccountRole(),
+                    account.getAccountStatus()
+            ))
                     .willReturn("access-token");
 
             LoginResponse response = authService.login(request);

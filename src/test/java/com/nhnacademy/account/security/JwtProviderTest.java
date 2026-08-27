@@ -4,6 +4,7 @@ import com.nhnacademy.account.config.JwtKeyConfig;
 import com.nhnacademy.account.config.JwtProperties;
 import com.nhnacademy.account.config.SecurityConfig;
 import com.nhnacademy.account.domain.AccountRole;
+import com.nhnacademy.account.domain.AccountStatus;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
@@ -71,7 +72,11 @@ class JwtProviderTest {
     void createAccessTokenUsesSharedJwkSourceAndConfiguredClaims() {
         UUID accountUuid = UUID.randomUUID();
 
-        String token = jwtProvider.createAccessToken(accountUuid, AccountRole.USER);
+        String token = jwtProvider.createAccessToken(
+                accountUuid,
+                AccountRole.USER,
+                AccountStatus.ACTIVE
+        );
 
         Jwt parsed = jwtDecoder.decode(token);
         assertEquals("test-key-002", parsed.getHeaders().get("kid"));
@@ -85,6 +90,8 @@ class JwtProviderTest {
         );
         assertEquals(issuedAt, parsed.getIssuedAt());
         assertEquals(issuedAt.plus(ACCESS_TOKEN_TTL), parsed.getExpiresAt());
+        assertEquals(Set.of("USER"), Set.copyOf(parsed.getClaimAsStringList("roles")));
+        assertEquals("ACTIVE", parsed.getClaimAsString("account_status"));
     }
 
     @Test
@@ -92,7 +99,11 @@ class JwtProviderTest {
         properties.setIssuedAudiences(
                 new LinkedHashSet<>(Set.of("inventory-api"))
         );
-        String token = jwtProvider.createAccessToken(UUID.randomUUID(), AccountRole.USER);
+        String token = jwtProvider.createAccessToken(
+                UUID.randomUUID(),
+                AccountRole.USER,
+                AccountStatus.ACTIVE
+        );
 
         assertThrows(JwtValidationException.class, () -> jwtDecoder.decode(token));
     }

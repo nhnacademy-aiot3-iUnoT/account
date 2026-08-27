@@ -82,6 +82,12 @@ public enum ErrorCode {
             "비밀번호가 일치하지 않습니다."
     ),
 
+    INVALID_VERIFICATION_TOKEN(
+            HttpStatus.BAD_REQUEST,
+            "A009",
+            "유효하지 않거나 만료된 인증 정보입니다."
+    ),
+
     // Authentication
     INVALID_CREDENTIALS(
             HttpStatus.UNAUTHORIZED,
