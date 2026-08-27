@@ -55,3 +55,5 @@ security:
     allowed-algorithms:
       - rs256
     private-key-path: ${JWT_PRIVATE_KEY_PATH:${java.io.tmpdir}/account/jwt-private.pem}
+  refresh-token:
+    ttl: ${REFRESH_TOKEN_TTL:14d}
