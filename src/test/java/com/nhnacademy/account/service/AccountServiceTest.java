@@ -385,6 +385,27 @@ class AccountServiceTest {
     }
 
     @Test
+    void reactivateInactiveAccount() {
+        UUID uuid = account.getUuid();
+        account.deactivate();
+        given(accountRepository.findByUuid(uuid)).willReturn(Optional.of(account));
+
+        Account result = accountService.reactivateAccount(uuid);
+
+        assertEquals(AccountStatus.ACTIVE, result.getAccountStatus());
+        then(accountRepository).should().findByUuid(uuid);
+    }
+
+    @Test
+    void reactivateAccountWithInvalidState() {
+        UUID uuid = account.getUuid();
+        given(accountRepository.findByUuid(uuid)).willReturn(Optional.of(account));
+
+        assertThrows(ConflictException.class,
+                () -> accountService.reactivateAccount(uuid));
+    }
+
+    @Test
     void findAccount() {
         given(accountRepository.findByUuid(any(UUID.class)))
             .willReturn(Optional.of(account));

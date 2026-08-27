@@ -7,23 +7,24 @@ import com.nhnacademy.account.dto.request.ChangeOwnPasswordRequest;
 import com.nhnacademy.account.dto.request.CreateAccountRequest;
 import com.nhnacademy.account.dto.request.EmailAvailabilityRequest;
 import com.nhnacademy.account.dto.request.PasswordReuseCheckRequest;
-import com.nhnacademy.account.dto.request.ResetPasswordTokenRequest;
+import com.nhnacademy.account.dto.request.ReactivationConfirmRequest;
 import com.nhnacademy.account.dto.request.ResetPasswordRequest;
+import com.nhnacademy.account.dto.request.ResetPasswordTokenRequest;
 import com.nhnacademy.account.dto.request.UpdateAccountNameRequest;
 import com.nhnacademy.account.dto.request.WithdrawAccountRequest;
+import com.nhnacademy.account.global.error.ErrorCode;
+import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.service.AccountService;
-import com.nhnacademy.account.service.EmailService;
+import com.nhnacademy.account.service.PasswordResetService;
+import com.nhnacademy.account.service.ReactivationService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
 import org.springframework.restdocs.RestDocumentationContextProvider;
 import org.springframework.restdocs.RestDocumentationExtension;
@@ -36,17 +37,15 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.documentationConfiguration;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
@@ -73,13 +72,10 @@ class AccountControllerTest {
     private AccountService accountService;
 
     @MockitoBean
-    private EmailService emailService;
+    private PasswordResetService passwordResetService;
 
     @MockitoBean
-    private RedisTemplate<String, String> redisTemplate;
-
-    @MockitoBean
-    private ValueOperations<String, String> valueOperations;
+    private ReactivationService reactivationService;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -90,8 +86,6 @@ class AccountControllerTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(context)
                 .apply(documentationConfiguration(restDocumentation))
                 .build();
-
-        given(redisTemplate.opsForValue()).willReturn(valueOperations);
 
         accountList = List.of(
                 persistedAccount("test", "test@test.com", "hashed"),
@@ -365,6 +359,59 @@ class AccountControllerTest {
     }
 
     @Test
+    @DisplayName("POST - 본인 계정 재활성화 인증 메일 요청")
+    void requestReactivationVerification() throws Exception {
+        UUID accountUuid = accountList.getFirst().getUuid();
+        authenticate(accountUuid);
+
+        mockMvc.perform(post("/api/accounts/me/reactivation/verification"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.success").value(true));
+
+        then(reactivationService).should().requestVerification(accountUuid);
+    }
+
+    @Test
+    @DisplayName("POST - 메일 인증 후 본인 계정 재활성화")
+    void confirmReactivation() throws Exception {
+        Account account = accountList.getFirst();
+        UUID accountUuid = account.getUuid();
+        ReactivationConfirmRequest request =
+                new ReactivationConfirmRequest("a".repeat(64));
+
+        given(reactivationService.confirm(accountUuid, request.token()))
+                .willReturn(account);
+        authenticate(accountUuid);
+
+        mockMvc.perform(post("/api/accounts/me/reactivation/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.uuid").value(accountUuid.toString()))
+                .andExpect(jsonPath("$.data.accountStatus").value("ACTIVE"));
+
+        then(reactivationService).should()
+                .confirm(accountUuid, request.token());
+    }
+
+    @Test
+    @DisplayName("POST - 형식이 잘못된 재활성화 인증 토큰 거부")
+    void rejectMalformedReactivationToken() throws Exception {
+        UUID accountUuid = accountList.getFirst().getUuid();
+        ReactivationConfirmRequest request =
+                new ReactivationConfirmRequest("invalid-token");
+        authenticate(accountUuid);
+
+        mockMvc.perform(post("/api/accounts/me/reactivation/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+
+        then(reactivationService).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("POST - 이메일 사용 가능 여부 확인")
     void checkEmailAvailability() throws Exception {
         EmailAvailabilityRequest request = new EmailAvailabilityRequest("available@test.com");
@@ -430,12 +477,10 @@ class AccountControllerTest {
         String email = "test@test.com";
         ResetPasswordTokenRequest request = new ResetPasswordTokenRequest(email);
 
-        given(accountService.existsByEmail(email)).willReturn(true);
-
         mockMvc.perform(post("/api/accounts/pwd")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.success").value(true))
                 .andDo(document("issue-password-reset-token",
                         requestFields(
@@ -449,33 +494,14 @@ class AccountControllerTest {
                         )
                 ));
 
-        ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
-        then(emailService).should().sendText(
-                eq(email),
-                eq("비밀번호 초기화 메일"),
-                contentCaptor.capture()
-        );
-
-        String resetUrl = contentCaptor.getValue();
-        assertTrue(resetUrl.matches("http://localhost:10404/pwd/[0-9a-f]{64}"));
-
-        String token = resetUrl.substring(resetUrl.lastIndexOf('/') + 1);
-        Duration ttl = Duration.ofMinutes(5);
-        then(valueOperations).should().set("pwd-reset:token:" + token, email, ttl);
-        then(valueOperations).should().set("pwd-reset:email:" + email, token, ttl);
+        then(passwordResetService).should().request(email);
     }
 
     @Test
     @DisplayName("POST - 비밀번호 재설정")
     void resetPasswordWithValidToken() throws Exception {
         String token = "a".repeat(64);
-        String email = "test@test.com";
-        Account account = accountList.getFirst();
         ResetPasswordRequest request = new ResetPasswordRequest("new-password");
-
-        given(valueOperations.getAndDelete("pwd-reset:token:" + token)).willReturn(email);
-        given(accountService.findAccountByEmail(email)).willReturn(account);
-        given(accountService.resetPassword(account.getUuid(), request)).willReturn(account);
 
         mockMvc.perform(post("/api/accounts/pwd/reset/{token}", token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -494,9 +520,7 @@ class AccountControllerTest {
                         )
                 ));
 
-        then(accountService).should().findAccountByEmail(email);
-        then(accountService).should().resetPassword(account.getUuid(), request);
-        then(redisTemplate).should().delete("pwd-reset:email:" + email);
+        then(passwordResetService).should().reset(token, request);
     }
 
     @Test
@@ -505,14 +529,16 @@ class AccountControllerTest {
         String token = "b".repeat(64);
         ResetPasswordRequest request = new ResetPasswordRequest("new-password");
 
-        given(valueOperations.getAndDelete("pwd-reset:token:" + token)).willReturn(null);
+        willThrow(new BadRequestException(ErrorCode.INVALID_VERIFICATION_TOKEN))
+                .given(passwordResetService)
+                .reset(token, request);
 
         mockMvc.perform(post("/api/accounts/pwd/reset/{token}", token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.error.code").value("A001"))
+                .andExpect(jsonPath("$.error.code").value("A009"))
                 .andDo(document("reset-password-invalid-token",
                         requestFields(
                                 fieldWithPath("password").description("변경할 새 비밀번호")
