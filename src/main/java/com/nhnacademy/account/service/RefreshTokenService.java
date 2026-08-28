@@ -4,6 +4,7 @@ import com.nhnacademy.account.config.RefreshTokenProperties;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +15,7 @@ import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
@@ -34,6 +36,12 @@ public class RefreshTokenService {
         redisTemplate.opsForValue().set(
                 tokenKey(token),
                 accountUuid.toString(),
+                properties.getTtl()
+        );
+
+        log.info(
+                "Refresh token issued. accountUuid={}, ttl={}",
+                accountUuid,
                 properties.getTtl()
         );
 
