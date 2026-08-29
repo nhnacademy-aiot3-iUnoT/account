@@ -72,8 +72,7 @@ class AccountsInternalControllerTest {
                 .andExpect(jsonPath("$[1].accountUuid").value(accounts.get(1).getUuid().toString()))
                 .andExpect(jsonPath("$[1].email").value("member1@example.com"))
                 .andExpect(jsonPath("$[0].accountId").doesNotExist())
-                .andExpect(jsonPath("$[0].hashedPassword").doesNotExist())
-                .andExpect(jsonPath("$[0].name").doesNotExist());
+                .andExpect(jsonPath("$[0].hashedPassword").doesNotExist());
 
         then(accountService).should().findAllByEmail(email);
     }
@@ -99,8 +98,7 @@ class AccountsInternalControllerTest {
                 .andExpect(jsonPath("$[1].accountUuid").value(uuids.get(1)))
                 .andExpect(jsonPath("$[1].email").value("member2@test.com"))
                 .andExpect(jsonPath("$[0].accountId").doesNotExist())
-                .andExpect(jsonPath("$[0].hashedPassword").doesNotExist())
-                .andExpect(jsonPath("$[0].name").doesNotExist());
+                .andExpect(jsonPath("$[0].hashedPassword").doesNotExist());
 
         then(accountService).should().findByUuids(uuids);
     }
@@ -129,6 +127,7 @@ class AccountsInternalControllerTest {
         UUID accountUuid = UUID.randomUUID();
         InternalAccountInfoResponse response = new InternalAccountInfoResponse(
                 accountUuid,
+                "test",
                 "member@test.com"
         );
         given(accountService.withdrawAccount(accountUuid)).willReturn(response);
