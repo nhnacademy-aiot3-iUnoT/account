@@ -33,7 +33,7 @@ import java.util.UUID;
 
 @Configuration
 @EnableWebSecurity
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, RefreshTokenProperties.class})
 public class SecurityConfig {
 
     @Bean
@@ -77,8 +77,13 @@ public class SecurityConfig {
                                 "/actuator/health/**", "/actuator/serviceregistry", "/actuator/prometheus"
                         ).permitAll()
 
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/auth/login",
+                                "/api/auth/refresh",
+                                "/api/auth/logout"
+                        ).permitAll()
+
                         .requestMatchers(
-                                "/api/auth/**",
                                 "/api/accounts/check-email",
                                 "/.well-known/jwks.json",
                                 "/api/accounts/pwd/**",

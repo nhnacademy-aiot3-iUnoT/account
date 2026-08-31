@@ -13,9 +13,12 @@ import com.nhnacademy.account.global.error.exception.NotFoundException;
 import com.nhnacademy.account.global.util.EmailNormalizer;
 import com.nhnacademy.account.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -28,13 +31,16 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional(readOnly = true)
 public class AccountService {
+    private static final String EMAIL_UNIQUE_CONSTRAINT = "uk_account_email";
+
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final InvitationClient invitationClient;
 
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void createAccount(CreateAccountRequest request) {
         String email = EmailNormalizer.normalize(request.email());
         String hashedPassword = passwordEncoder.encode(request.password());
@@ -54,15 +60,10 @@ public class AccountService {
         try {
             accountRepository.saveAndFlush(account);
         } catch (RuntimeException saveException) {
-            SignupCompensateRequest compensateRequest = new SignupCompensateRequest(
-                    request.inviteToken(),
-                    account.getUuid()
-            );
+            compensateQuietly(request.inviteToken(), account.getUuid());
 
-            try {
-                invitationClient.compensate(compensateRequest);
-            } catch (RuntimeException compensateException) {
-                saveException.addSuppressed(compensateException);
+            if (isEmailUniqueViolation(saveException)) {
+                throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
             }
 
             throw saveException;
@@ -80,10 +81,47 @@ public class AccountService {
         }
 
         try {
-            return accountRepository.save(account);
+            return accountRepository.saveAndFlush(account);
         } catch (DataIntegrityViolationException e) {
-            throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            if (isEmailUniqueViolation(e)) {
+                throw new ConflictException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            }
+
+            throw e;
         }
+    }
+
+    private void compensateQuietly(UUID inviteToken, UUID accountUuid) {
+        try {
+            invitationClient.compensate(
+                    new SignupCompensateRequest(inviteToken, accountUuid)
+            );
+        } catch (RuntimeException e) {
+            log.warn("회원가입 보상 요청 실패. accountUuid={}", accountUuid, e);
+        }
+    }
+
+    private boolean isEmailUniqueViolation(Throwable exception) {
+        if (!(exception instanceof DataIntegrityViolationException)) {
+            return false;
+        }
+
+        Throwable current = exception;
+        while (current != null) {
+            if (current instanceof ConstraintViolationException constraintViolation) {
+                String constraintName = constraintViolation.getConstraintName();
+                if (constraintName != null) {
+                    for (String identifier : constraintName.split("[\\s.`\"\\[\\]]+")) {
+                        if (EMAIL_UNIQUE_CONSTRAINT.equalsIgnoreCase(identifier)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            current = current.getCause();
+        }
+
+        return false;
     }
 
     public boolean existsByEmail(String email) {
