@@ -86,6 +86,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/accounts/check-email",
                                 "/.well-known/jwks.json",
+                                "/api/auth/.well-known/jwks.json",
                                 "/api/accounts/pwd/**",
                                 "/api/accounts/internal/**"
                         ).permitAll()
