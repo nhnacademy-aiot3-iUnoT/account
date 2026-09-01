@@ -4,8 +4,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record LoginResponse(
+        @NotBlank
+        @Size(max = 256)
+        String accessToken,
 
-    @NotBlank
-    @Size(max = 256)
-    String accessToken
-){ }
+        @NotBlank
+        @Size(max = 128)
+        String refreshToken
+) {
+}
