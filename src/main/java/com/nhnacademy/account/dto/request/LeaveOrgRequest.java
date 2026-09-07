@@ -1,6 +1,9 @@
 package com.nhnacademy.account.dto.request;
 
-public record LeaveOrgRequest(
+import java.util.UUID;
 
+public record LeaveOrgRequest(
+        UUID accountUuid,
+        String previousEmail
 ) {
 }

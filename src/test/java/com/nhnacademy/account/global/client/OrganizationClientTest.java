@@ -7,6 +7,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.UUID;
+
 import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
@@ -20,7 +22,10 @@ class OrganizationClientTest {
 
     @Test
     void leaveOrganizationUsesInternalOrganizationEndpoint() {
-        LeaveOrgRequest request = new LeaveOrgRequest();
+        LeaveOrgRequest request = new LeaveOrgRequest(
+                UUID.randomUUID(),
+                "member@example.com"
+        );
 
         organizationClient.leaveOrganization(request);
 
