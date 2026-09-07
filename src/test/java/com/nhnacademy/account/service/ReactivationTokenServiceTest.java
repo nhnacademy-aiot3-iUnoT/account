@@ -8,8 +8,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.RedisScript;
 
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class ReactivationTokenServiceTest {
@@ -110,10 +113,13 @@ class ReactivationTokenServiceTest {
     void consumeDeletesSingleUseTokenAndAccountIndex() {
         UUID accountUuid = UUID.randomUUID();
         String token = "a".repeat(64);
-        mockValueOperations();
-        given(valueOperations.getAndDelete(
-                ReactivationTokenService.TOKEN_PREFIX + token
-        )).willReturn(accountUuid.toString());
+        given(redisTemplate.execute(
+                org.mockito.ArgumentMatchers.<RedisScript<Long>>any(),
+                org.mockito.ArgumentMatchers.eq(List.of(
+                        ReactivationTokenService.TOKEN_PREFIX + token
+                )),
+                org.mockito.ArgumentMatchers.eq(accountUuid.toString())
+        )).willReturn(1L);
 
         tokenService.consume(accountUuid, token);
 
@@ -126,10 +132,6 @@ class ReactivationTokenServiceTest {
     void rejectMissingToken() {
         UUID accountUuid = UUID.randomUUID();
         String token = "a".repeat(64);
-        mockValueOperations();
-        given(valueOperations.getAndDelete(
-                ReactivationTokenService.TOKEN_PREFIX + token
-        )).willReturn(null);
 
         assertThrows(
                 BadRequestException.class,
@@ -141,14 +143,21 @@ class ReactivationTokenServiceTest {
     void rejectTokenIssuedForAnotherAccount() {
         UUID accountUuid = UUID.randomUUID();
         String token = "a".repeat(64);
-        mockValueOperations();
-        given(valueOperations.getAndDelete(
-                ReactivationTokenService.TOKEN_PREFIX + token
-        )).willReturn(UUID.randomUUID().toString());
+        given(redisTemplate.execute(
+                org.mockito.ArgumentMatchers.<RedisScript<Long>>any(),
+                org.mockito.ArgumentMatchers.eq(List.of(
+                        ReactivationTokenService.TOKEN_PREFIX + token
+                )),
+                org.mockito.ArgumentMatchers.eq(accountUuid.toString())
+        )).willReturn(0L);
 
         assertThrows(
                 BadRequestException.class,
                 () -> tokenService.consume(accountUuid, token)
+        );
+
+        then(redisTemplate).should(never()).delete(
+                ReactivationTokenService.ACCOUNT_PREFIX + accountUuid
         );
     }
 

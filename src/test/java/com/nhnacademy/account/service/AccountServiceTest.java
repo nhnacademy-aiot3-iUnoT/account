@@ -25,6 +25,7 @@ import com.nhnacademy.account.global.error.exception.ConflictException;
 import com.nhnacademy.account.global.error.exception.NotFoundException;
 import com.nhnacademy.account.global.error.exception.UpstreamServiceException;
 import com.nhnacademy.account.repository.AccountRepository;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -111,6 +115,15 @@ class AccountServiceTest {
         then(invitationClient)
                 .should()
                 .signup(any());
+    }
+
+    @Test
+    void createAccountDoesNotOpenServiceTransaction() throws NoSuchMethodException {
+        Transactional transactional = AccountService.class
+                .getDeclaredMethod("createAccount", CreateAccountRequest.class)
+                .getAnnotation(Transactional.class);
+
+        assertEquals(Propagation.NOT_SUPPORTED, transactional.propagation());
     }
 
     @Test
@@ -217,7 +230,7 @@ class AccountServiceTest {
     }
 
     @Test
-    void createAccountCompensatesInvitationsFail() {
+    void createAccountPreservesSaveFailureWhenCompensationFails() {
         UUID inviteToken = UUID.randomUUID();
         CreateAccountRequest request = new CreateAccountRequest(
                 inviteToken,
@@ -250,8 +263,7 @@ class AccountServiceTest {
         );
 
         assertSame(saveException, result);
-        assertEquals(1, result.getSuppressed().length);
-        assertSame(compensateException, result.getSuppressed()[0]);
+        then(invitationClient).should().compensate(any(SignupCompensateRequest.class));
     }
 
     @Test
@@ -303,7 +315,7 @@ class AccountServiceTest {
         given(passwordEncoder.encode(request.password()))
                 .willReturn("hashed");
 
-        given(accountRepository.save(any(Account.class)))
+        given(accountRepository.saveAndFlush(any(Account.class)))
                 .willReturn(account);
 
         Account result = accountService.createAdminAccount(request);
@@ -316,7 +328,7 @@ class AccountServiceTest {
 
         then(accountRepository)
                 .should()
-                .save(any(Account.class));
+                .saveAndFlush(any(Account.class));
     }
 
     @Test
@@ -351,13 +363,90 @@ class AccountServiceTest {
                 .willReturn(false);
         given(passwordEncoder.encode(request.password()))
                 .willReturn("hashed");
-        given(accountRepository.save(any(Account.class)))
+        given(accountRepository.saveAndFlush(any(Account.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
         Account result = accountService.createAdminAccount(request);
 
         assertEquals("admin@test.com", result.getEmail());
         then(accountRepository).should().existsByEmail("admin@test.com");
+    }
+
+    @Test
+    void createAdminAccountMapsOnlyEmailConstraintViolation() {
+        CreateAdminAccountRequest request = new CreateAdminAccountRequest(
+                "admin",
+                "admin@test.com",
+                "password"
+        );
+        DataIntegrityViolationException saveException =
+                constraintViolation(
+                        "public.uk_account_email INDEX public.uk_account_email_INDEX_8"
+                );
+        given(accountRepository.existsByEmail(request.email())).willReturn(false);
+        given(passwordEncoder.encode(request.password())).willReturn("hashed");
+        given(accountRepository.saveAndFlush(any(Account.class)))
+                .willThrow(saveException);
+
+        ConflictException result = assertThrows(
+                ConflictException.class,
+                () -> accountService.createAdminAccount(request)
+        );
+
+        assertEquals(ErrorCode.EMAIL_ALREADY_EXISTS, result.getErrorCode());
+    }
+
+    @Test
+    void createAdminAccountPreservesDifferentConstraintViolation() {
+        CreateAdminAccountRequest request = new CreateAdminAccountRequest(
+                "admin",
+                "admin@test.com",
+                "password"
+        );
+        DataIntegrityViolationException saveException =
+                constraintViolation("uk_account_uuid");
+        given(accountRepository.existsByEmail(request.email())).willReturn(false);
+        given(passwordEncoder.encode(request.password())).willReturn("hashed");
+        given(accountRepository.saveAndFlush(any(Account.class)))
+                .willThrow(saveException);
+
+        DataIntegrityViolationException result = assertThrows(
+                DataIntegrityViolationException.class,
+                () -> accountService.createAdminAccount(request)
+        );
+
+        assertSame(saveException, result);
+    }
+
+    @Test
+    void createAccountMapsDuplicateRaceAfterCompensationFailure() {
+        UUID inviteToken = UUID.randomUUID();
+        CreateAccountRequest request = new CreateAccountRequest(
+                inviteToken,
+                "test",
+                "test@test.com",
+                "password"
+        );
+        DataIntegrityViolationException saveException =
+                constraintViolation("uk_account_email");
+        UpstreamServiceException compensateException =
+                new UpstreamServiceException("compensation failed");
+        given(accountRepository.existsByEmail(request.email())).willReturn(false);
+        given(passwordEncoder.encode(request.password())).willReturn("hashed");
+        given(accountRepository.saveAndFlush(any(Account.class)))
+                .willThrow(saveException);
+        willThrow(compensateException)
+                .given(invitationClient)
+                .compensate(any(SignupCompensateRequest.class));
+
+        ConflictException result = assertThrows(
+                ConflictException.class,
+                () -> accountService.createAccount(request)
+        );
+
+        assertEquals(ErrorCode.EMAIL_ALREADY_EXISTS, result.getErrorCode());
+        then(invitationClient).should().signup(any(InvitationsSignupRequest.class));
+        then(invitationClient).should().compensate(any(SignupCompensateRequest.class));
     }
 
     @Test
@@ -967,6 +1056,15 @@ class AccountServiceTest {
         );
 
         assertEquals(ErrorCode.SAME_AS_CURRENT_PASSWORD, exception.getErrorCode());
+    }
+
+    private DataIntegrityViolationException constraintViolation(String constraintName) {
+        ConstraintViolationException cause = new ConstraintViolationException(
+                "constraint violation",
+                new SQLException("constraint violation"),
+                constraintName
+        );
+        return new DataIntegrityViolationException("save failed", cause);
     }
 
 }
