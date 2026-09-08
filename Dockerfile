@@ -9,6 +9,9 @@ COPY src ./src
 RUN ./mvnw clean package -DskipTests -B
 
 FROM eclipse-temurin:21-jre
+
+ENV TZ=Asia/Seoul
+
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
