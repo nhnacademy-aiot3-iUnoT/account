@@ -6,6 +6,7 @@ import com.nhnacademy.account.domain.AccountStatus;
 import com.nhnacademy.account.dto.request.*;
 import com.nhnacademy.account.dto.response.InternalAccountInfoResponse;
 import com.nhnacademy.account.global.client.InvitationClient;
+import com.nhnacademy.account.global.client.OrganizationClient;
 import com.nhnacademy.account.global.error.ErrorCode;
 import com.nhnacademy.account.global.error.exception.BadRequestException;
 import com.nhnacademy.account.global.error.exception.ConflictException;
@@ -39,6 +40,7 @@ public class AccountService {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final InvitationClient invitationClient;
+    private final OrganizationClient organizationClient;
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void createAccount(CreateAccountRequest request) {
@@ -286,6 +288,12 @@ public class AccountService {
         if (!passwordEncoder.matches(request.password(), account.getHashedPassword())) {
             throw new BadRequestException(ErrorCode.PASSWORD_MISMATCH);
         }
+
+        LeaveOrgRequest leaveOrgRequest = new LeaveOrgRequest(
+                account.getUuid(),
+                account.getEmail()
+        );
+        organizationClient.leaveOrganization(leaveOrgRequest);
 
         account.withdraw();
     }
